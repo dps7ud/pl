@@ -1,0 +1,7 @@
+# Compiled python
+*.pyc
+*.pyo
+
+# Vim swp files
+*.sw
+*.swp
