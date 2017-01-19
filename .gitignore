@@ -1,4 +1,6 @@
-# Compiled python
+# Compiled files
+*.hi
+*.o
 *.pyc
 *.pyo
 

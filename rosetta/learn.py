@@ -1,3 +1,5 @@
+# This file explores the following line of code:
+# lst = list( zip( *(  [iter(  [x.strip() for x in sys.stdin.readlines()]  )]  * 2 )))
 import sys
 six = [x.strip() for x in sys.stdin.readlines()]
 five = iter(  six  )
