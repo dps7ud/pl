@@ -1,0 +1,10 @@
+### Starting build.
+# Target: pa1a.ml.depends, tags: { extension:re, file:pa1a.re, ocaml, ocamldep, quiet }
+/home/david/.opam/4.02.3/bin/ocamldep.opt -modules -pp refmt -impl pa1a.re | tee pa1a.re.depends > pa1a.ml.depends
+# Target: pa1a.cmo, tags: { byte, compile, extension:cmo, extension:re, file:pa1a.cmo, file:pa1a.re, implem, ocaml, quiet }
+env OCAMLC="ocamlc" /home/david/.opam/4.02.3/bin/rec -c -pp refmt -o pa1a.cmo -intf-suffix .rei -impl pa1a.re
+# Target: pa1a.cmx, tags: { compile, extension:cmx, extension:re, file:pa1a.cmx, file:pa1a.re, implem, native, ocaml, quiet }
+env OCAMLOPT="ocamlopt.opt" /home/david/.opam/4.02.3/bin/reopt -c -pp refmt -o pa1a.cmx -intf-suffix .rei -impl pa1a.re
+# Target: pa1a.native, tags: { dont_link_with, extension:native, file:pa1a.native, link, native, ocaml, program, quiet }
+env OCAMLOPT="ocamlopt.opt" /home/david/.opam/4.02.3/bin/reopt pa1a.cmx -o pa1a.native
+# Compilation successful.

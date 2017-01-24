@@ -1,0 +1,6 @@
+Ocaml basics
+https://ocaml.org/learn/tutorials/basics.html
+https://cml.inria.fr/pub/doc/manual-ocaml/libref/Pervasives.html
+
+Ocaml I/O
+https://caml.inria.fr/pub/docs/fpcl/fpcl-09.pdf
