@@ -1,8 +1,6 @@
-open Pa1btree;
-
 let salutations = fun (l: list string) : list string => {
     /* Given a list of strings, return a list of strings with greetings*/
-    List.map (fun name => {"Salutations, " ^ name}) l
+    List.map (fun name => {"Hello " ^ name}) l
 };
 
 let dot_product = fun (l1: list int) (l2: list int) : option int => {
@@ -10,7 +8,7 @@ let dot_product = fun (l1: list int) (l2: list int) : option int => {
        or None if the lists differ in length 
     */
     if (List.length l1 !== List.length l2){
-        None;
+        None
     } else {
         let mult_add = fun a b c => {a + (b * c)};
         Some (List.fold_left2 (mult_add) 0 l1 l2)
@@ -22,43 +20,20 @@ let count = fun (l: list 'a) (e: 'a) : int => {
     of the element in the list.
     */
     List.length(List.filter (fun a => a == e) l)
+
 };
 
+/*
 let pre_order = fun (t: int_tree) : list int => {
     /* Return a list of tree elements as they would be visited
     in a pre-order traversal
-    TODO: change l @ [x] -> x :: l and call rev l at the end.
     */
-    let rec po = fun (t: option int_tree) (l: list int) : list int => {
-        if(t == None){
-            l
-        } else {
-            let t = switch(t){
-                | Some t => t
-            };
-            let l = l @ [root_data (t)];
-            let l = po (left_child t) l;
-            let l = po (right_child t) l;
-            l;
-        };
-    };
-    po (Some t) []
 };
 
 let int_tree_map = fun (f: int => int) (t: int_tree) : int_tree => {
-    let rec bt = fun (tr: option int_tree) : option int_tree => {
-        if(tr == None){
-            None
-        } else {
-            let ret = switch(tr){
-                | Some tr => tr
-            };
-            Some ({data: f(root_data ret), left: (bt (left_child ret)), right: (bt (right_child ret))});
-        };
-    };
-    let x = switch(bt (Some t)){
-        |Some x => x
-    };
-    x;
-    
+    /* Given a function and a tree, return a treee coresponding to 
+    the given tree with the function applied to every node.
+    */
 };
+*/
+

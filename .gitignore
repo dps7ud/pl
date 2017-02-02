@@ -7,3 +7,7 @@
 # Vim swp files
 *.sw
 *.swp
+
+# reason _build dir
+1a/_build/
+*.depends

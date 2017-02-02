@@ -2,5 +2,14 @@ Ocaml basics
 https://ocaml.org/learn/tutorials/basics.html
 https://cml.inria.fr/pub/doc/manual-ocaml/libref/Pervasives.html
 
+Ocaml list module
+https://cml.inria.fr/pub/doc/manual-ocaml/libref/List.html
+
 Ocaml I/O
 https://caml.inria.fr/pub/docs/fpcl/fpcl-09.pdf
+
+Everything reason v. ocaml
+facebook.github.io/reason
+
+On how to extract option 'a -> 'a
+http://stackoverflow.com/questions/12288628/ocaml-option-get 
