@@ -26,15 +26,15 @@ Class Main inherits IO {
           num_tasks <- tasks.len();
 
           while not done loop{
-              out_string("------------\n");
+              --out_string("------------\n");
               let post : List <- pairs.firsts(),
               avail : List <- tasks.difference(post),
               choice : Sop <- avail.hd() (*if choice is uninitialized, 
                                           it came from an empty list *)
               in{
-                  out_int(ans.len());
-                  out_string(" ans\n");
-                  ans.print_list();
+                  --out_int(ans.len());
+                  --out_string(" ans\n");
+                  --ans.print_list();
                   if avail.is_empty() then
                       done <- true
                   else
@@ -46,7 +46,7 @@ Class Main inherits IO {
                   fi;
                   post <- pairs.firsts();
                   avail <- tasks.difference(post);
-                  out_string("=================\n");
+                  --out_string("=================\n");
               };
           } pool;
 
