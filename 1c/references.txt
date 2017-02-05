@@ -1,0 +1,34 @@
+1a & 1b:
+Ocaml basics
+https://ocaml.org/learn/tutorials/basics.html
+https://cml.inria.fr/pub/doc/manual-ocaml/libref/Pervasives.html
+
+Ocaml list module
+https://cml.inria.fr/pub/doc/manual-ocaml/libref/List.html
+
+Ocaml I/O
+https://caml.inria.fr/pub/docs/fpcl/fpcl-09.pdf
+
+Everything reason v. ocaml
+facebook.github.io/reason
+
+On how to extract option 'a -> 'a
+http://stackoverflow.com/questions/12288628/ocaml-option-get 
+
+
+1c:
+cool-
+Cool Reference Manual
+code from cool-examples.zip
+code from pa1c-hint.zip
+Weimer's shortest path in Cool (Obj-Oriented)
+
+
+python-
+The algorithm is origional design but a few resources were helpful in cutting down LOC.
+
+List to list of pairs one-liner
+https://opensourcehacker.com/2011/02/23/tuplifying-a-list-or-pairs-in-python/
+
+Flatten list of tuples one-liner
+http://stackoverflow.com/questions/10632839/python-transform-list-of-tuples-in-to-1-flat-list-or-1-matrix
