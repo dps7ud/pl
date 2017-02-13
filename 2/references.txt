@@ -1,0 +1,21 @@
+How to get GCC 4.1:
+https://launchpad.net/~h-rayflood/+archive/ubuntu/gcc-lower
+
+Resolving a linking error for gcc-4.1
+http://serverfault.com/questions/266138/cannot-find-lgcc-s-from-gcc-3-4-on-unbuntu-11-04
+
+How to un-fuck a makefile:
+http://stackoverflow.com/questions/9770170/calling-flex-from-a-makefile
+
+C File io:
+https://www.tutorialspoint.com/cprogramming/c_file_io.htm
+
+regex testing:
+http://regexr.com/
+
+flex's regex spec.
+http://dinosaur.compilertools.net/flex/flex_7.html
+
+General flex help:
+https://web.stanford.edu/class/archive/cs/cs143/cs143.1128/handouts/050%20Flex%20In%20A%20Nutshell.pdf
+ftp://ftp.gnu.org/old-gnu/Manuals/flex-2.5.4/html_mono/flex.html#SEC9:w
