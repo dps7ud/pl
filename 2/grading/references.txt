@@ -1,0 +1,47 @@
+How to get GCC 4.1:
+https://launchpad.net/~h-rayflood/+archive/ubuntu/gcc-lower
+    I might have messed up my ubuntu partition. Hard to tell.
+
+Resolving a linking error for gcc-4.1
+http://serverfault.com/questions/266138/cannot-find-lgcc-s-from-gcc-3-4-on-unbuntu-11-04
+    Had to dodge around manually liking stuff.
+
+How to un-fuck a makefile:
+http://stackoverflow.com/questions/9770170/calling-flex-from-a-makefile
+    Some ancient author decided that it was necessary for makefiles to
+    use tabs rather than spaces. While there may be occasion to make use
+    of the tab character, there are many reasons to believe that tabs are
+    inferior to spaces, specifically when writing code.
+    1. Tabs will not take a uniform number of columns accross different editors
+        and machines and in different environments. When using spaces, code will 
+        look the same on every machine and every editor.
+    2. Tabs will produce a variable number of spaces depending on where the
+        tab character is placed. A space always takes one column.
+    3. On some systems, tabs default to eight columns of text. After a small
+        number of nested blocks of code, this indentation becomes impractical.
+
+C File io:
+https://www.tutorialspoint.com/cprogramming/c_file_io.htm
+    Forgot about writing/reading from files.
+
+regex testing:
+http://regexr.com/
+    The regex specification for this tool may not specifically match flex's
+    regex implementation. It was useful anyway.
+
+flex's regex spec.
+http://dinosaur.compilertools.net/flex/flex_7.html
+
+General flex help:
+https://web.stanford.edu/class/archive/cs/cs143/cs143.1128/handouts/050%20Flex%20In%20A%20Nutshell.pdf
+ftp://ftp.gnu.org/old-gnu/Manuals/flex-2.5.4/html_mono/flex.html#SEC9
+    Aided construction of the .lex file and in understanding the basics of the generator tool.
+
+Pre-processor magic for nice enum:
+http://stackoverflow.com/questions/9907160/how-to-convert-enum-names-to-string-in-c
+    The main advantage of using this set of macos is that the pre-processor
+    keeps enum values and string values in sync.
+
+Weimer's unsort-c.c
+    Help in designing a C list structure and in using this structure to read/write lines to
+    a file.

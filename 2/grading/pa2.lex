@@ -1,11 +1,9 @@
 %option noyywrap
 %x COMMENT
 %{
-//%x STR
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
-
 #include "Token.c"
 
 int numLines = 0;
@@ -28,6 +26,9 @@ void throwError(int lineNumber, int errorCode, char* badInput, int len){
             printf("ERROR: %d: Lexer: +string constant is too long (%d > 1024)\n"\
                 , lineNumber + 1, (int)strlen(badInput) - 2);
             break;
+        case -6:
+            printf("Not a valid cool file\n");
+            break;
     }
 }
 
@@ -36,12 +37,6 @@ struct node {
     char * val;
     int lino;
     struct node * next;
-/*
-<INITIAL>\"     {BEGIN(STR);}
-<STR><<EOF>>                 return -2;
-<STR>(\\[^\n\0]|[^\n\"\0])*      return STRING;
-<STR>\"     {BEGIN(INITIAL);}
-*/
 } ;
 
 %}
@@ -69,7 +64,7 @@ t(?i:rue)  return TRUE;
 (?i:while)  return WHILE;
 
 
-\"(\\[^\n\0]|[^\n\"\0])*\"      return STRING;
+\"(\\[^\n\0]|[^\n\"\0])*\"      return STRING;//TODO: handles \0 in string literal?
 
 <INITIAL>\-\-.*              // ignore singe-line comments
 <COMMENT,INITIAL>(\n|\n\r|\r\n|\r)  ++numLines;
@@ -119,41 +114,64 @@ t(?i:rue)  return TRUE;
 int main(int argc, char **argv){
     /* error - error number or zero
     *  inName - filename passed to the lexer
+    *  numTokens - number of tokens lexed
     *  outName - generated filename
+    *  outFile - FILE* to output file
     *  tok - will hold each token type as it is lexed
     *  tokens - list head to which we will add
     *  yyin - global that defines input source
     */
     int error = 0;
-    int numTokens = 0;
     char* inName = argv[1];
+    int numTokens = 0;
     char outName[80];
     FILE* outFile;
     enum token_t tok;
     struct node * tokens = NULL;
     extern FILE* yyin;
 
+    /* Here we check if the input file is not a .cl file.*/
+    if(argc > 1){
+        int len = strlen(inName);
+        if(len < 4){
+            throwError(0, -6, inName, (char)65);
+            return 0;
+        }
+        if(inName[len - 3] != '.'
+            || inName[len - 2] != 'c'
+            || inName[len - 1] != 'l'){
+
+            throwError(0, -6, inName, (char)65);
+            return 0;
+        }
+
+    }
+
     /* Set input source.*/
     yyin = fopen(inName, "r");
 
     /* Lex till break at end of file or error.*/
     while(1){
-        /* strVal - value of regex match
-         * ii - loop variable
+        /* ii - loop variable
          * newNode - Construct a node for each token
+         * strVal - value of regex match
+         * tokVal - indicates which token_t has been parsed
         */
         int ii;
         struct node * newNode;
         char* strVal;
         char* tokVal;
 
+        /* Get the next token.*/
         tok = yylex();
         numTokens++;
+
         /* (int)tok values < -1 indicate errors.*/
         error = (int)tok;
 
         /* For ints, make sure values are < MAX_INT
-         *  and trim leading 0's
+         *  and trim leading 0's using a kludge of
+         *  the worst kind.
         */
         strVal = strdup(yytext);
         if((int)tok == 16){
@@ -171,7 +189,7 @@ int main(int argc, char **argv){
         }
 
         /* If we have a string, manualy trim quotes
-         *  and check max string length
+         *  and check against max string length
         */
         if((int)tok == 35){
             int len = strlen(strVal);
@@ -190,38 +208,42 @@ int main(int argc, char **argv){
             break;
         }
 
-        /* Get value of token tolower*/
+        /* Get string value of token tolower.
+         * ascii offset.
+        */
         tokVal = strdup(TOKEN_STRING[tok]);
         for(ii=0; tokVal[ii]; ii++){
             tokVal[ii] += 32;
         }
 
-        /* Create and populate our new node & push to list*/
+        /* Create and populate our new node & push to list.*/
         newNode = malloc(sizeof(*newNode));
         newNode -> head = tokVal;
         newNode -> lino = numLines + 1;
         newNode -> val = strVal;
         newNode -> next = tokens;
         tokens = newNode;
-        printf("token: %s\t\tline: %d\tval:%s\n", tokens->head, numLines + 1, strVal);
     }
 
-    /* Check for errors*/
+    /* What should our filename be?*/
     strcpy(outName, argv[1]);
-    strcat(outName, "--lex");
+    strcat(outName, "-lex");
+
+    /* Check for errors.*/
     if(error < -1){
         char* errMsg = strdup(yytext);
         throwError(numLines, error, errMsg, strlen(errMsg));
         return error;
     } else if (numTokens == 1){
-
+        /* Single token implies empty file (possibly with comments)*/
         outFile = fopen(outName, "w");
         fclose(outFile);
-        
     } else {
+
         /* Nodes for reversing our list*/
         struct node * end = NULL;
         struct node * keeper = tokens -> next;
+
         /*  Reverse our list.*/
         while(keeper != NULL){
             tokens -> next = end;
@@ -230,6 +252,7 @@ int main(int argc, char **argv){
             keeper = keeper -> next;
         }
         tokens -> next = end;
+
         /* Generate output filename and actual file object,
          * open output file and write all our info.
         */
@@ -237,16 +260,15 @@ int main(int argc, char **argv){
         for(; tokens != NULL; tokens = tokens -> next){
             fprintf(outFile, "%d\n", tokens->lino);
             fprintf(outFile, "%s\n", tokens->head);
-//            printf("%d\n", tokens->lino);
-//            printf("%s\n", tokens->head);
+            /* Some data-types require us to output associated lexeme*/
             if(!(strcmp(tokens -> head, "identifier") &&
                 strcmp(tokens -> head, "integer") &&
                 strcmp(tokens -> head, "string") &&
                 strcmp(tokens -> head, "type")) ){
-//                printf("%s\n", tokens->val);
                 fprintf(outFile, "%s\n", tokens->val);
             }
         }
+
         /* You BETTER close that file.*/
         fclose(outFile);
     }

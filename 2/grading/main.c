@@ -613,7 +613,6 @@ char *yytext;
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
-
 #include "Token.c"
 
 int numLines = 0;
@@ -636,6 +635,9 @@ void throwError(int lineNumber, int errorCode, char* badInput, int len){
             printf("ERROR: %d: Lexer: +string constant is too long (%d > 1024)\n"\
                 , lineNumber + 1, (int)strlen(badInput) - 2);
             break;
+        case -6:
+            printf("Not a valid cool file\n");
+            break;
     }
 }
 
@@ -652,7 +654,7 @@ struct node {
 */
 } ;
 
-#line 656 "main.c"
+#line 658 "main.c"
 
 #define INITIAL 0
 #define COMMENT 1
@@ -871,9 +873,9 @@ YY_DECL
 		}
 
 	{
-#line 48 "try.lex"
+#line 50 "try.lex"
 
-#line 877 "main.c"
+#line 879 "main.c"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -932,123 +934,123 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 49 "try.lex"
+#line 51 "try.lex"
 //Ignore whitespace that isn't newline
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 50 "try.lex"
+#line 52 "try.lex"
 return CASE;
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 51 "try.lex"
+#line 53 "try.lex"
 return ELSE;
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 53 "try.lex"
+#line 55 "try.lex"
 return CLASS;
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 54 "try.lex"
+#line 56 "try.lex"
 return ESAC;
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 55 "try.lex"
+#line 57 "try.lex"
 return FALSE;
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 56 "try.lex"
+#line 58 "try.lex"
 return FI;
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 57 "try.lex"
+#line 59 "try.lex"
 return IF;
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 58 "try.lex"
+#line 60 "try.lex"
 return IN;
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 59 "try.lex"
+#line 61 "try.lex"
 return INHERITS;
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 60 "try.lex"
+#line 62 "try.lex"
 return ISVOID;
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 61 "try.lex"
+#line 63 "try.lex"
 return LET;
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 62 "try.lex"
+#line 64 "try.lex"
 return LOOP;
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 63 "try.lex"
+#line 65 "try.lex"
 return NEW;
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 64 "try.lex"
+#line 66 "try.lex"
 return NOT;
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 65 "try.lex"
+#line 67 "try.lex"
 return OF;
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 66 "try.lex"
+#line 68 "try.lex"
 return POOL;
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 67 "try.lex"
+#line 69 "try.lex"
 return THEN;
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 68 "try.lex"
+#line 70 "try.lex"
 return TRUE;
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 69 "try.lex"
+#line 71 "try.lex"
 return WHILE;
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 72 "try.lex"
-return STRING;
+#line 74 "try.lex"
+return STRING;//TODO: handles \0 in string literal?
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 74 "try.lex"
+#line 76 "try.lex"
 // ignore singe-line comments
 	YY_BREAK
 case 23:
 /* rule 23 can match eol */
 YY_RULE_SETUP
-#line 75 "try.lex"
+#line 77 "try.lex"
 ++numLines;
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 76 "try.lex"
+#line 78 "try.lex"
 {   // End comment
                     commentDepth--;
                     if(commentDepth == 0){
@@ -1057,23 +1059,23 @@ YY_RULE_SETUP
                 }
 	YY_BREAK
 case YY_STATE_EOF(COMMENT):
-#line 82 "try.lex"
+#line 84 "try.lex"
 return -3;
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 83 "try.lex"
+#line 85 "try.lex"
 // Consume stars in comments
 	YY_BREAK
 case 26:
 /* rule 26 can match eol */
 YY_RULE_SETUP
-#line 84 "try.lex"
+#line 86 "try.lex"
 // Consume anything not a star
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 85 "try.lex"
+#line 87 "try.lex"
 {   // Begin comment
                             commentDepth++;
                             BEGIN(COMMENT);
@@ -1081,129 +1083,129 @@ YY_RULE_SETUP
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 90 "try.lex"
+#line 92 "try.lex"
 return AT;
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 91 "try.lex"
+#line 93 "try.lex"
 return COLON;
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 92 "try.lex"
+#line 94 "try.lex"
 return COMMA;
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 93 "try.lex"
+#line 95 "try.lex"
 return DIVIDE;
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 94 "try.lex"
+#line 96 "try.lex"
 return DOT;
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 95 "try.lex"
+#line 97 "try.lex"
 return EQUALS;
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 96 "try.lex"
+#line 98 "try.lex"
 return LARROW;
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 97 "try.lex"
+#line 99 "try.lex"
 return LE;
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 98 "try.lex"
+#line 100 "try.lex"
 return LBRACE;
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 99 "try.lex"
+#line 101 "try.lex"
 return LPAREN;
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 100 "try.lex"
+#line 102 "try.lex"
 return LT;
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 101 "try.lex"
+#line 103 "try.lex"
 return MINUS;
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 102 "try.lex"
+#line 104 "try.lex"
 return PLUS;
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 103 "try.lex"
+#line 105 "try.lex"
 return RARROW;
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 104 "try.lex"
+#line 106 "try.lex"
 return RBRACE;
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 105 "try.lex"
+#line 107 "try.lex"
 return RPAREN;
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
-#line 106 "try.lex"
+#line 108 "try.lex"
 return SEMI;
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
-#line 107 "try.lex"
+#line 109 "try.lex"
 return TILDE;
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
-#line 108 "try.lex"
+#line 110 "try.lex"
 return TIMES;
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
-#line 111 "try.lex"
+#line 113 "try.lex"
 return IDENTIFIER;
 	YY_BREAK
 case 48:
 YY_RULE_SETUP
-#line 112 "try.lex"
+#line 114 "try.lex"
 return TYPE;
 	YY_BREAK
 case 49:
 YY_RULE_SETUP
-#line 113 "try.lex"
+#line 115 "try.lex"
 return INTEGER;
 	YY_BREAK
 case 50:
 YY_RULE_SETUP
-#line 114 "try.lex"
+#line 116 "try.lex"
 return -2;// Invalid character
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
-#line 115 "try.lex"
+#line 117 "try.lex"
 return -1;
 	YY_BREAK
 case 51:
 YY_RULE_SETUP
-#line 117 "try.lex"
+#line 119 "try.lex"
 ECHO;
 	YY_BREAK
-#line 1207 "main.c"
+#line 1209 "main.c"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -2202,48 +2204,71 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 117 "try.lex"
+#line 119 "try.lex"
 
 
 
 int main(int argc, char **argv){
     /* error - error number or zero
     *  inName - filename passed to the lexer
+    *  numTokens - number of tokens lexed
     *  outName - generated filename
+    *  outFile - FILE* to output file
     *  tok - will hold each token type as it is lexed
     *  tokens - list head to which we will add
     *  yyin - global that defines input source
     */
     int error = 0;
-    int numTokens = 0;
     char* inName = argv[1];
+    int numTokens = 0;
     char outName[80];
     FILE* outFile;
     enum token_t tok;
     struct node * tokens = NULL;
     extern FILE* yyin;
 
+    /* Here we check if the input file is not a .cl file.*/
+    if(argc > 1){
+        int len = strlen(inName);
+        if(len < 4){
+            throwError(0, -6, inName, (char)65);
+            return 0;
+        }
+        if(inName[len - 3] != '.'
+            || inName[len - 2] != 'c'
+            || inName[len - 1] != 'l'){
+
+            throwError(0, -6, inName, (char)65);
+            return 0;
+        }
+
+    }
+
     /* Set input source.*/
     yyin = fopen(inName, "r");
 
     /* Lex till break at end of file or error.*/
     while(1){
-        /* strVal - value of regex match
-         * ii - loop variable
+        /* ii - loop variable
          * newNode - Construct a node for each token
+         * strVal - value of regex match
+         * tokVal - indicates which token_t has been parsed
         */
         int ii;
         struct node * newNode;
         char* strVal;
         char* tokVal;
 
+        // Get the next token
         tok = yylex();
         numTokens++;
+
         /* (int)tok values < -1 indicate errors.*/
         error = (int)tok;
 
         /* For ints, make sure values are < MAX_INT
-         *  and trim leading 0's
+         *  and trim leading 0's using a kludge of
+         *  the worst kind.
         */
         strVal = strdup(yytext);
         if((int)tok == 16){
@@ -2261,7 +2286,7 @@ int main(int argc, char **argv){
         }
 
         /* If we have a string, manualy trim quotes
-         *  and check max string length
+         *  and check against max string length
         */
         if((int)tok == 35){
             int len = strlen(strVal);
@@ -2280,38 +2305,43 @@ int main(int argc, char **argv){
             break;
         }
 
-        /* Get value of token tolower*/
+        /* Get string value of token tolower.
+         * ascii offset.
+        */
         tokVal = strdup(TOKEN_STRING[tok]);
         for(ii=0; tokVal[ii]; ii++){
             tokVal[ii] += 32;
         }
 
-        /* Create and populate our new node & push to list*/
+        /* Create and populate our new node & push to list.*/
         newNode = malloc(sizeof(*newNode));
         newNode -> head = tokVal;
         newNode -> lino = numLines + 1;
         newNode -> val = strVal;
         newNode -> next = tokens;
         tokens = newNode;
-        printf("token: %s\t\tline: %d\tval:%s\n", tokens->head, numLines + 1, strVal);
+//        printf("token: %s\t\tline: %d\tval:%s\n", tokens->head, numLines + 1, strVal);
     }
 
-    /* Check for errors*/
+    /* What should our filename be?*/
     strcpy(outName, argv[1]);
-    strcat(outName, "--lex");
+    strcat(outName, "-lex");
+
+    /* Check for errors.*/
     if(error < -1){
         char* errMsg = strdup(yytext);
         throwError(numLines, error, errMsg, strlen(errMsg));
         return error;
     } else if (numTokens == 1){
-
+        /* Single token implies empty file (possibly with comments)*/
         outFile = fopen(outName, "w");
         fclose(outFile);
-        
     } else {
+
         /* Nodes for reversing our list*/
         struct node * end = NULL;
         struct node * keeper = tokens -> next;
+
         /*  Reverse our list.*/
         while(keeper != NULL){
             tokens -> next = end;
@@ -2320,6 +2350,7 @@ int main(int argc, char **argv){
             keeper = keeper -> next;
         }
         tokens -> next = end;
+
         /* Generate output filename and actual file object,
          * open output file and write all our info.
         */
@@ -2329,6 +2360,7 @@ int main(int argc, char **argv){
             fprintf(outFile, "%s\n", tokens->head);
 //            printf("%d\n", tokens->lino);
 //            printf("%s\n", tokens->head);
+            /* Some data-types require us to output associated lexeme*/
             if(!(strcmp(tokens -> head, "identifier") &&
                 strcmp(tokens -> head, "integer") &&
                 strcmp(tokens -> head, "string") &&
@@ -2337,6 +2369,7 @@ int main(int argc, char **argv){
                 fprintf(outFile, "%s\n", tokens->val);
             }
         }
+
         /* You BETTER close that file.*/
         fclose(outFile);
     }
