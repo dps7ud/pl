@@ -8,6 +8,7 @@ Class Main inherits IO {
             can_read : Bool <- true, -- "There are more lines to read"
             done : Bool <- false     -- "We have a solution or cycle is found"
         in {
+            -- This loop handles input by appropriately constructing our various lists
             while can_read loop {
                 let a : String <- in_string (), b : String <- in_string () in 
                 if b = "" then
@@ -23,33 +24,26 @@ Class Main inherits IO {
                 }
                 fi ;
           } pool ;
-          num_tasks <- tasks.len();
+          num_tasks <- tasks.len(); -- we know we have a valid soln when num_tasks = ans.len()
 
           while not done loop{
-              --out_string("------------\n");
-              let post : List <- pairs.firsts(),
-              avail : List <- tasks.difference(post),
-              choice : Sop <- avail.hd() (*if choice is uninitialized, 
-                                          it came from an empty list *)
+              let post : List <- pairs.firsts(),        -- List of tasks w/ prereqs
+              avail : List <- tasks.difference(post),   -- List of tasks doable now
+              choice : Sop <- avail.hd()                -- Unique correct choice for next task.
+                                                        --  May be uninitialized if avail is Nil
               in{
-                  --out_int(ans.len());
-                  --out_string(" ans\n");
-                  --ans.print_list();
                   if avail.is_empty() then
                       done <- true
-                  else
-                      {
+                  else{
                       ans <- (new Cons).init(choice, ans);
                       pairs <- pairs.filtertwo(choice.getone());
                       tasks <- tasks.filterone(choice.getone());
-                      }
-                  fi;
+                  } fi;
+
                   post <- pairs.firsts();
                   avail <- tasks.difference(post);
-                  --out_string("=================\n");
               };
           } pool;
-
           if ans.len() = num_tasks then
               ans.reverse( (new Nil) ).print_list()
           else
@@ -63,7 +57,7 @@ Class Sop {
     (* String or pair: rather than implement two different
      * list classes, we simply abstract the datatype of each
      * node. If we need a string list, simply use 'one' and
-     * set ispair <- true. ispair exists so that comparisons
+     * set ispair <- false. ispair exists so that comparisons
      * between pairs and singletons will evaluate as desired.
     *)
     one : String;
@@ -72,13 +66,16 @@ Class Sop {
     initialized : Bool;
 
     getone() : String { one };
-    gettwo() : String { two };
-    getispair() : Bool {ispair}; -- Defaults to false
-    isinit() : Bool {initialized};
+    gettwo() : String { two };      
+    getispair() : Bool {ispair};    -- Defaults to false
+    isinit() : Bool {initialized};  -- If false, we probably have a problem
+                                    --  likely from calling nil.hd()
 
     str(s : String) : Sop {{initialized <- true; one <- s; self;}};
+    -- String initializer
 
     pair(a : String, b : String) : Sop {
+        -- Pair initializer
         {
         one <- a;
         two <- b;
@@ -89,6 +86,7 @@ Class Sop {
     };
 
     cmp(other : Sop) : Bool {
+        -- True iff one = one && two == two
         if ispair = other.getispair() then
             if one = other.getone() then
                 if two = other.gettwo() then
@@ -161,19 +159,26 @@ Class Cons inherits List {
     };
 
     firsts () : List {
-        -- Extracts list of strings from a list of pairs by 
-        -- taking the second string in each pair
-        let rest : List <- xcdr.firsts(),
-        current : Sop <- (new Sop).str( xcar.getone() ) in {
-            if rest.contains(current) then
-                rest
-            else
-                (new Cons).init(current, xcdr.firsts())
-            fi;
+        (* Extracts list of strings from a list of pairs by 
+         * taking the second string in each pair.
+         * Recursively times out the grading server so...
+         * loops!
+        *)
+        let num : Int <- self.len(),
+        ret : List <- (new Nil),
+        rest: List <- self,
+        counter : Int <- 0 in {
+            while counter < num loop {
+                counter <- counter + 1;
+                ret <- (new Cons).init((new Sop).str(rest.hd().getone()), ret);
+                rest <- rest.tl();
+            } pool;
+            ret;
         }
     };
 
     filterone(st : String) : List {
+        -- Deletes nodes by equality on first string
         if xcar.getone() = st then
             xcdr.filterone(st)
         else
@@ -182,6 +187,7 @@ Class Cons inherits List {
     };
 
     filtertwo(st : String) : List {
+        -- Deletes nodes by equality on second string
         if xcar.gettwo() = st then
             xcdr.filtertwo(st)
         else

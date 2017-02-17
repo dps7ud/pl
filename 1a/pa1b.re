@@ -53,7 +53,10 @@ let int_tree_map = fun (f: int => int) (t: int_tree) : int_tree => {
             let ret = switch(tr){
                 | Some tr => tr
             };
-            Some ({data: f(root_data ret), left: (bt (left_child ret)), right: (bt (right_child ret))});
+            let d = f(root_data ret);
+            let l = bt (left_child ret);
+            let r = bt (right_child ret);
+            Some ({data: d, left: l, right: r});
         };
     };
     let x = switch(bt (Some t)){

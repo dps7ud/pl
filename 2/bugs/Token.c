@@ -1,6 +1,4 @@
-#include <limits.h>
 #include <stdio.h>
-/*
 #define FOREACH_TOKEN(TOKEN) \
     TOKEN(AT)         \
     TOKEN(CASE)       \
@@ -47,27 +45,77 @@
 
 #define GENERATE_ENUM(ENUM) ENUM,
 #define GENERATE_STRING(STRING) #STRING,
-*/
 
 enum token_t{
-    AT,
-    IN,
-    CLASS,
-    IF,
-    ELSE
+    FOREACH_TOKEN(GENERATE_ENUM)
 };
 
+static char *TOKEN_STRING[] = {
+    FOREACH_TOKEN(GENERATE_STRING)
+};
 
-enum token_t func(){
-    return CLASS;
-}
+//int main(){
+//    int ii;
+//    for(ii = 0; ii < 10; ii++){
+//        enum token_t tok = ii;
+//        printf("%s\n", TOKEN_STRING[tok]);
+//    }
+//}
 
+//enum token_t{
+//    //Keywords
+//    CASE,
+//    CLASS,
+//    ELSE,
+//    ESAC,
+//    FALSE,
+//    FI,
+//    IF,
+//    IN,
+//    INHERITS,
+//    ISVOID,
+//    LET,
+//    LOOP,
+//    NEW,
+//    NOT,
+//    OF,
+//    POOL,
+//    THEN,
+//    TRUE,
+//    WHILE,
+//    //Punctuation
+//    AT,
+//    COLON,
+//    COMMA,
+//    DIVIDE,
+//    DOT,
+//    EQUALS,
+//    LARROW,
+//    LBRACE,
+//    LE,
+//    LPAREN,
+//    LT,
+//    MINUS,
+//    PLUS,
+//    RARROW,
+//    RBRACE,
+//    RPAREN,
+//    SEMI,
+//    TILDE,
+//    TIMES,
+//    //Literals, type and identifier
+//    IDENTIFIER,
+//    INTEGER,
+//    STRING,
+//    TYPE
+//};
+/*
 int main(){
-    enum token_t tok = func();
-    printf("%d  %d\n",(int)CLASS, (int)tok);
-    printf("%d  %d\n",CLASS < -1, tok < -1);
-    printf("tok < 0:%d  tok > 1:%d\n",tok < 0, tok > 1);
-    printf("tok <-1:%d  tok > 1:%d\n",(int)tok < -1, (int)tok > 1);
-    printf("%d\n", INT_MAX);
-    return 0;
+    enum token_t myTok = CLASS;
+    switch(myTok) {
+        case CLASS: puts("class"); break;
+        case IF: puts("if"); break;
+        case FI: puts("fi"); break;
+    }
 }
+*/

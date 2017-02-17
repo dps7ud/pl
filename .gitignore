@@ -9,5 +9,8 @@
 *.swp
 
 # reason _build dir
-1a/_build/
 *.depends
+
+#
+*_log
+*_digests

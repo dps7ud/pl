@@ -27,8 +27,16 @@ Weimer's shortest path in Cool (Obj-Oriented)
 python-
 The algorithm is origional design but a few resources were helpful in cutting down LOC.
 
-List to list of pairs one-liner
+List to list-of-pairs one-liner
 https://opensourcehacker.com/2011/02/23/tuplifying-a-list-or-pairs-in-python/
 
 Flatten list of tuples one-liner
 http://stackoverflow.com/questions/10632839/python-transform-list-of-tuples-in-to-1-flat-list-or-1-matrix
+
+
+testcase-
+Eicar test string
+https://en.wikipedia.org/wiki/EICAR_test_file
+
+GTUBE test string
+https://en.wikipedia.org/wiki/GTUBE

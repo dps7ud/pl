@@ -1,5 +1,5 @@
 from __future__ import print_function; import sys
-lst = list( zip( *(  [iter(  [x.strip() for x in sys.stdin.readlines()]  )] * 2  )))
+lst = list( zip( *(  [iter(  [x.replace('\n','') for x in sys.stdin.readlines()]  )] * 2  )))
 def solve(tasks, pairs, ans):
     tasks or (print(*ans, sep='\n') or exit())
     temp = sorted(list(tasks - set([x[0] for x in pairs])))
@@ -12,12 +12,14 @@ The code has been golfed to achieve a (nearly) minimal number of lines. We will
 
 1. import sys; from __future__ import print_function
     imports sys and the print function. This line consists of two logical lines.
-    In python3 we emit the __future__ input and we have one fewer lines.
+    In python3 we emit the __future__ import and we have one fewer lines.
 
-2. lst = list( zip( *(  [iter(  [x.strip() for x in sys.stdin.readlines()]  )]  * 2 )))
+2. lst = list(zip( *([iter([x.replace('n','') for x in sys.stdin.readlines()])] * 2)))
 
-    i. [x.strip() for x in sys.stdin.readlines()]
-        is the list of trimmed input lines.
+    i. [x.replace('\n','') for x in sys.stdin.readlines()]
+        is the list of input lines with newline characters removed.
+        Note that this leaves carriage return characters intact, allowing us to
+        to properly handle training \cr characters.
 
     ii. iter(i)
         is an iterator object over the list i.

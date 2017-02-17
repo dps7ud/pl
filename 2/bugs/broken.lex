@@ -1,4 +1,5 @@
 %x COMMENT
+%x STR
 %{
 
 #include <limits.h>
@@ -6,6 +7,7 @@
 #include <stdlib.h>
 
 #include "Token.c"
+
 
 int numLines = 0;
 int commentDepth = 0;
@@ -30,6 +32,7 @@ struct node {
     char * val;
     int lino;
     struct node * next;
+//(\\[^\n\0<<EOF>>]|[^\n\"\0<<EOF>>])* return STRING;
 } ;
 
 %}
@@ -38,7 +41,7 @@ struct node {
 (?i:case)   return CASE;
 (?i:else) return ELSE;
 
-(?i:class)  return CLASS;
+(?i:class)  return ELSE;
 (?i:esac)   return ESAC;
 f(?i:alse) return FALSE;
 (?i:fi) return FI;
@@ -55,8 +58,18 @@ f(?i:alse) return FALSE;
 (?i:then)   return THEN;
 t(?i:rue)  return TRUE;
 (?i:while)  return WHILE;
-\"(\\[^\n\0<<EOF>>]|[^\n\"\0<<EOF>>])*\"      return STRING;
 
+<STR>(\\[^\n\0<<EOF>>]|[^\n\"\0<<EOF>>])* {
+                                                puts("string found\n");
+                                                printf("%s\t%d\n", yytext, (int)STRING);
+                                                
+                                                return STRING;
+                                             }
+<INITIAL>\"                     {BEGIN(STR);
+                                }
+<STR>\"                      {BEGIN(INITIAL);
+                                }
+<STR>.                       return -7;
 <COMMENT,INITIAL>\-\-.*              // ignore singe-line comments
 <COMMENT,INITIAL>(\n|\n\r|\r\n|\r)  ++numLines;
 <COMMENT>\*\) {   // End comment
@@ -106,6 +119,7 @@ int main(int argc, char **argv){
 // \"(\\[^\n\0<<EOF>>]|[^\n\"\0<<EOF>>])*\"      return STRING;
     /* error - error number or zero
     *  inName - filename passed to the lexer
+    *  numTokens - total number of tokens so far
     *  outName - generated filename
     *  tok - will hold each token type as it is lexed
     *  tokens - list head to which we will add
@@ -113,6 +127,7 @@ int main(int argc, char **argv){
     */
     int error = 0;
     char* inName = argv[1];
+    int numTokens = 0;
     char outName[80];
     FILE* outFile;
     enum token_t tok;
@@ -122,57 +137,41 @@ int main(int argc, char **argv){
     /* Set input source.*/
     yyin = fopen(inName, "r");
 
-    /* Lex till break at end of file or error.*/
+    /* Lex till break at end of file.*/
     while(1){
-        /* strVal - value of regex match
+        /* tokenName - token name
          * ii - loop variable
          * newNode - Construct a node for each token
         */
+        char* tokenName;
         int ii;
         struct node * newNode;
-        char* strVal;
-        char* tokVal;
-
         tok = yylex();
-        /* (int)tok values < -1 indicate errors.*/
         error = (int)tok;
-
-        /* For ints, make sure values are < MAX_INT*/
         if((int)tok == 16){
             long int literalInt = strtol(strdup(yytext), 0, 10);
             if(literalInt < 0 || literalInt > 2147483647){
                 error = -4;
             }
         }
-
-        /* error == -1 EOF scanned
-         * error <  -1 scanner error.
-         */ 
         if(error < 0){
             break;
         }
-
-        /* Get value of token tolower*/
-        tokVal = strdup(TOKEN_STRING[tok]);
-        for(ii=0; tokVal[ii]; ii++){
-            tokVal[ii] += 32;
-        }
-        /* Get value of match. If we have a string, manualy trim quotes*/
-        strVal = strdup(yytext);
-        if((int)tok == 35){
-            int len = strlen(strVal);
-            strVal[len - 1] = 0;
-            strVal += 1;
-        }
-
-        /* Create and populate our new node & push to list*/
+        numTokens++;
         newNode = malloc(sizeof(*newNode));
-        newNode -> head = tokVal;
+        newNode -> head = strdup(TOKEN_STRING[tok]);
+        char* name= strdup(TOKEN_STRING[tok]);
+        for(ii=0; newNode -> head[ii]; ii++){
+            newNode -> head[ii] += 32;
+        }
+        if( !strcmp(name, "class")){
+            puts("found 'class' in tokens at construction\n");
+        }
         newNode -> lino = numLines + 1;
-        newNode -> val = strVal;
+        newNode -> val = strdup(yytext);
         newNode -> next = tokens;
         tokens = newNode;
-//        printf("token: %s\tnumber: %d\tval:%s\n", tokens->head, (int)tok, strVal);
+        printf("token: %s\tnumber: %d\tval:%s\n", tokens->head, (int)tok, yytext);
     }
 
     /* Check for errors*/
@@ -183,6 +182,9 @@ int main(int argc, char **argv){
         /* Nodes for reversing our list*/
         struct node * end = NULL;
         struct node * keeper = tokens -> next;
+        /* Generate output filename and actual file object.*/
+        strcpy(outName, argv[1]);
+        strcat(outName, "-lex1");
         /*  Reverse our list.*/
         while(keeper != NULL){
             tokens -> next = end;
@@ -191,11 +193,7 @@ int main(int argc, char **argv){
             keeper = keeper -> next;
         }
         tokens -> next = end;
-        /* Generate output filename and actual file object,
-         * open output file and write all our info.
-        */
-        strcpy(outName, argv[1]);
-        strcat(outName, "-lex1");
+        /* Open output file and write all our info*/
         outFile = fopen(outName, "w");
         for(; tokens != NULL; tokens = tokens -> next){
             fprintf(outFile, "%d\n", tokens->lino);
@@ -204,13 +202,16 @@ int main(int argc, char **argv){
 //            printf("%s\n", tokens->head);
             if(!(strcmp(tokens -> head, "identifier") &&
                 strcmp(tokens -> head, "integer") &&
+                strcmp(tokens -> head, "class") &&
                 strcmp(tokens -> head, "string") &&
                 strcmp(tokens -> head, "type")) ){
 //                printf("%s\n", tokens->val);
                 fprintf(outFile, "%s\n", tokens->val);
             }
+            if(!strcmp(tokens -> head, "class")){
+                puts("found 'class' in tokens at output\n");
+            }
         }
-        /* You BETTER close that file.*/
         fclose(outFile);
     }
     return 0;

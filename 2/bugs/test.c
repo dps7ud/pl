@@ -1,4 +1,6 @@
+#include <limits.h>
 #include <stdio.h>
+/*
 #define FOREACH_TOKEN(TOKEN) \
     TOKEN(AT)         \
     TOKEN(CASE)       \
@@ -45,15 +47,27 @@
 
 #define GENERATE_ENUM(ENUM) ENUM,
 #define GENERATE_STRING(STRING) #STRING,
+*/
 
 enum token_t{
-    FOREACH_TOKEN(GENERATE_ENUM)
+    AT,
+    IN,
+    IF,
+    CLASS,
+    ELSE
 };
 
-static char *TOKEN_STRING[] = {
-    FOREACH_TOKEN(GENERATE_STRING)
-};
 
-/* Making use of pre-processor to handle enum code was largely borrowed from
- * a stackoverflow post. See references.txt.
- */
+enum token_t func(){
+    return CLASS;
+}
+
+int main(){
+    enum token_t tok = func();
+    printf("%d  %d\n",(int)CLASS, (int)tok);
+    printf("%d  %d\n",CLASS < -1, tok < -1);
+    printf("tok < 0:%d  tok > 1:%d\n",tok < 0, tok > 1);
+    printf("tok <-1:%d  tok > 1:%d\n",tok < -1, tok > 1);
+    printf("%d\n", INT_MAX);
+    return 0;
+}
