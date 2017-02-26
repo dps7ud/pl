@@ -174,12 +174,14 @@ def p_expr_assign(p):
     #p[0] = ((p[1])[0], 'assign', p[1], p[3])
     p[0] = (p.lineno(1), 'assign', p[1], p[3])
 
-#def p_expr_dynamic_dispatch(p):
-#    'expr : expr DOT identifier LPAREN arglist RPAREN'
-#
-#def p_expr_static_dispatch(p):
-#    'expr : expr AT type DOT identifier LPAREN arglist RPAREN'
-#
+def p_expr_dynamic_dispatch(p):
+    'expr : expr DOT identifier LPAREN arglist RPAREN'
+    p[0] = ( (p[1])[0],'dynamic_dispatch', p[1], p[3], p[5])
+
+def p_expr_static_dispatch(p):
+    'expr : expr AT type DOT identifier LPAREN arglist RPAREN'
+    p[0] = ( (p[1])[0], 'static_dispatch', p[1], p[3], p[5], p[7])
+
 def p_expr_self_dispatch(p):
     'expr : identifier LPAREN arglist RPAREN'
     p[0] = ((p[1])[0], 'self_dispatch', p[1], p[3])
@@ -187,6 +189,14 @@ def p_expr_self_dispatch(p):
 """ We allow lists of expressions to be:
     arglist: nullable
     exprlist: non-nullable"""
+
+def p_exprlist_one(p):
+    'exprlist : expr SEMI'
+    p[0] = [p[1]]
+
+def p_exprlist_many(p):
+    'exprlist : expr SEMI exprlist'
+    p[0] = [p[1]] + p[3]
 
 def p_arglist_many(p):
     'arglist : COMMA expr arglist'
@@ -211,14 +221,6 @@ def p_expr_while(p):
 def p_expr_block(p):
     'expr : LBRACE exprlist RBRACE'
     p[0] = (p.lineno(1), 'block', p[2])
-
-def p_exprlist_one(p):
-    'exprlist : expr SEMI'
-    p[0] = [p[1]]
-
-def p_exprlist_many(p):
-    'exprlist : expr SEMI exprlist'
-    p[0] = [p[1]] + p[3]
 
 def p_expr_new(p):
     'expr : NEW type'
@@ -324,14 +326,26 @@ two_exprs = {'plus', 'times', 'divide', 'minus', 'lt', 'le', 'eq', 'while'}
 one_expr = {'not', 'negate', 'isvoid'}
 
 def print_expr(ast):
+    print(ast)
     out_file.write(str(ast[0]) + '\n')
     out_file.write(ast[1] + '\n')
     if ast[1] == 'assign':
         #p[0] = (p.lineno(1), 'assign', p[1], p[3])
         print_identifier(ast[2])
         print_expr(ast[3])
-#    elif ast[1] == 'dynamic_dispatch':
-#    elif ast[1] == 'static_dispatch':
+    elif ast[1] == 'dynamic_dispatch':
+        # 'expr : expr DOT identifier LPAREN arglist RPAREN'
+        # p[0] = ( (p[1])[0],'dynamic_dispatch', p[1], p[3], p[5])
+        print_expr(ast[2])
+        print_identifier(ast[3])
+        print_list(ast[4], print_expr)
+    elif ast[1] == 'static_dispatch':
+        #                                        expr type ,   id, arglist
+        # p[0] = ( (p[1])[0], 'static_dispatch', p[1], p[3], p[5], [7])
+        print_expr(ast[2])
+        print_identifier(ast[3])
+        print_identifier(ast[4])
+        print_list(ast[5], print_expr)
     elif ast[1] == 'self_dispatch':
         # 'expr : identifier LPAREN arglist RPAREN'
         # p[0] = ((p[1])[0], 'self_dispatch', p[1], p[3])
