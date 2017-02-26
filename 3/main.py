@@ -102,7 +102,6 @@ precedence = (
         ('left', 'DOT')
 )
 
-
 def p_program_classlist(p):
     'program : classlist'
     p[0] = p[1]
@@ -181,30 +180,45 @@ def p_expr_assign(p):
 #def p_expr_static_dispatch(p):
 #    'expr : expr AT type DOT identifier LPAREN arglist RPAREN'
 #
-#def p_expr_self_dispatch(p):
-#    'expr : identifier LPAREN arglist RPAREN'
+def p_expr_self_dispatch(p):
+    'expr : identifier LPAREN arglist RPAREN'
+    p[0] = ((p[1])[0], 'self_dispatch', p[1], p[3])
 
-#def p_arglist_some(p):
-#    'arglist : expr COMMA arglist'
-#
-#def p_arglist_none(p):
-#    'arglist : '
+""" We allow lists of expressions to be:
+    arglist: nullable
+    exprlist: non-nullable"""
 
-#def p_expr_if(p):
-#    'expr : IF expr THEN expr ELSE expr'
-#
+def p_arglist_many(p):
+    'arglist : COMMA expr arglist'
+    p[0] = [p[2]] + p[3]
+
+def p_arglist_one(p):
+    'arglist : expr arglist'
+    p[0] = [p[1]] + p[2]
+
+def p_arglist_none(p):
+    'arglist : '
+    p[0] = []
+
+def p_expr_if(p):
+    'expr : IF expr THEN expr ELSE expr FI'
+    p[0] = (p.lineno(1), 'if', p[2], p[4], p[6])
+
 def p_expr_while(p):
     'expr : WHILE expr LOOP expr POOL'
     p[0] = (p.lineno(1), 'while', p[2], p[4])
 
-#def p_expr_block(p):
-#    'expr : LBRACE exprlist RBRACE'
-#
-#def p_exprlist_one(p):
-#    'exprlist : expr'
-#
-#def p_exprlist_many(p):
-#    'exprlist : expr SEMI exprlist'
+def p_expr_block(p):
+    'expr : LBRACE exprlist RBRACE'
+    p[0] = (p.lineno(1), 'block', p[2])
+
+def p_exprlist_one(p):
+    'exprlist : expr SEMI'
+    p[0] = [p[1]]
+
+def p_exprlist_many(p):
+    'exprlist : expr SEMI exprlist'
+    p[0] = [p[1]] + p[3]
 
 def p_expr_new(p):
     'expr : NEW type'
@@ -253,7 +267,6 @@ def p_expr_not(p):
 def p_expr_parens(p):
     'expr : LPAREN expr RPAREN'
     p[0] = p[2]
-#    p[0] = (p.lineno(1), p[2])
     
 def p_expr_identifier(p):
     'expr : identifier'
@@ -281,7 +294,6 @@ def p_error(p):
         exit(1)
     else:
         print "Syntax error at EOF" #EOF lineno
-
 
 ###Output###
 ############
@@ -313,50 +325,62 @@ one_expr = {'not', 'negate', 'isvoid'}
 
 def print_expr(ast):
     out_file.write(str(ast[0]) + '\n')
+    out_file.write(ast[1] + '\n')
     if ast[1] == 'assign':
         #p[0] = (p.lineno(1), 'assign', p[1], p[3])
-        out_file.write(ast[1] + '\n')
         print_identifier(ast[2])
         print_expr(ast[3])
 #    elif ast[1] == 'dynamic_dispatch':
 #    elif ast[1] == 'static_dispatch':
-#    elif ast[1] == 'self_dispatch':
-#    elif ast[1] == 'if':
-#    elif ast[1] == 'block':
+    elif ast[1] == 'self_dispatch':
+        # 'expr : identifier LPAREN arglist RPAREN'
+        # p[0] = ((p[1])[0], 'self_dispatch', p[1], p[3])
+        print_identifier(ast[2])
+        print_list(ast[3], print_expr)
+    elif ast[1] == 'if':
+        # p[0] = (p.lineno(1), 'if', p[2], p[4], [6])
+        print_expr(ast[2])
+        print_expr(ast[3])
+        print_expr(ast[4])
+
+    elif ast[1] == 'block':
+        #     out_file.write(ast[1] + '\n')
+        print_list(ast[2], print_expr)
 #    elif ast[1] == 'let':
 #    elif ast[1] == 'case':
     elif ast[1] == 'new':
         #'expr : NEW type'
         #p[0] = (p.lineno(1), 'new', p[2])
-        out_file.write(ast[1] + '\n')
+        #out_file.write(ast[1] + '\n')
         print_identifier(ast[2])
     elif ast[1] in one_expr:
         # p[0] = (p.lineno(1), 'isvoid', p[1])
-        out_file.write(ast[1] + '\n')
+        #out_file.write(ast[1] + '\n')
         print_expr(ast[2])
     elif ast[1] in two_exprs:
         # p[0] = (p.lineno(1), 'minus', p[1], p[3])
-        out_file.write(ast[1] + '\n')
+        #out_file.write(ast[1] + '\n')
         print_expr(ast[2])
         print_expr(ast[3])
     elif ast[1] == 'integer':
         # p[0] = (p.lineno(1), 'integer', p[1])
-        out_file.write(ast[1] + '\n')
+        #out_file.write(ast[1] + '\n')
         out_file.write(str(ast[2]) + '\n')
     elif ast[1] == 'string':
         # p[0] = (p.lineno(1), 'string', p[1])
-        out_file.write(ast[1] + '\n')
+        #out_file.write(ast[1] + '\n')
         out_file.write(ast[2] + '\n')
     elif ast[1] == 'identifier':
         # p[0] = (p.lineno(1), 'identifier', p[1])
-        out_file.write(ast[1] + '\n')
-        out_file.write(ast[2] + '\n')
+        #out_file.write(ast[1] + '\n')
+        print_identifier(ast[2])
     elif ast[1] in {'true', 'false'}:
+        pass
         # Since t/f are the names of these expressions,
-        out_file.write(ast[1] + '\n')
-    elif len(ast) == 2:
-        #Should only get here if expr was parsed from a paren expr
-        print_expr(ast[1])
+    #    out_file.write(ast[1] + '\n')
+#    elif len(ast) == 2:
+#        #Should only get here if expr was parsed from a paren expr
+#        print_expr(ast[1])
     else:
         print("Unimplemented expr: " + ast[1])
         out_file.write("Unimplemented expr: " + ast[1] + '\n')
@@ -388,7 +412,6 @@ def print_feature(ast):
             print_identifier(ast[3])
             print_expr(ast[4])
 
-
 def print_formal(ast):
     print_identifier(ast[1])
     print_identifier(ast[2])
@@ -410,14 +433,3 @@ ast = yacc.parse(lexer=pa2lexer)
 out_file = open(sys.argv[1][:-4] + "-ast", 'w')
 print_program(ast)
 out_file.close()
-
-
-
-
-
-
-
-
-
-
-
