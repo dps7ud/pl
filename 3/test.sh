@@ -3,5 +3,10 @@ rm $1-ast
 cool --lex $1
 cool --parse $1 --out ref
 python main.py $1-lex
-echo "theirs, mine"
-diff ref.cl-ast $1-ast
+DIFF=$(diff ref.cl-ast $1-ast)
+if [ "$DIFF" != "" ]
+then
+    vimdiff ref.cl-ast $1-ast
+else
+    echo "No diff"
+fi

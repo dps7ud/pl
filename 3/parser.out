@@ -1,0 +1,1822 @@
+Created by PLY version 3.8 (http://www.dabeaz.com/ply)
+
+Unused terminals:
+
+    THEN
+    FI
+    RARROW
+    DOT
+    CASE
+    ELSE
+    AT
+    IN
+    IF
+    OF
+    LET
+    ESAC
+
+Grammar
+
+Rule 0     S' -> program
+Rule 1     program -> classlist
+Rule 2     classlist -> class SEMI
+Rule 3     classlist -> class SEMI classlist
+Rule 4     class -> CLASS type LBRACE featurelist RBRACE
+Rule 5     class -> CLASS type INHERITS type LBRACE featurelist RBRACE
+Rule 6     featurelist -> <empty>
+Rule 7     featurelist -> feature SEMI featurelist
+Rule 8     feature -> identifier COLON type
+Rule 9     feature -> identifier COLON type LARROW expr
+Rule 10    feature -> identifier LPAREN formallist RPAREN COLON type LBRACE expr RBRACE
+Rule 11    feature -> identifier LPAREN RPAREN COLON type LBRACE expr RBRACE
+Rule 12    formallist -> formal
+Rule 13    formallist -> formal COMMA formallist
+Rule 14    formal -> identifier COLON type
+Rule 15    type -> TYPE
+Rule 16    identifier -> IDENTIFIER
+Rule 17    expr -> identifier LARROW expr
+Rule 18    expr -> WHILE expr LOOP expr POOL
+Rule 19    expr -> NEW type
+Rule 20    expr -> ISVOID expr
+Rule 21    expr -> expr PLUS expr
+Rule 22    expr -> expr MINUS expr
+Rule 23    expr -> expr TIMES expr
+Rule 24    expr -> expr DIVIDE expr
+Rule 25    expr -> TILDE expr
+Rule 26    expr -> expr LT expr
+Rule 27    expr -> expr LE expr
+Rule 28    expr -> expr EQUALS expr
+Rule 29    expr -> NOT expr
+Rule 30    expr -> LPAREN expr RPAREN
+Rule 31    expr -> identifier
+Rule 32    expr -> INTEGER
+Rule 33    expr -> STRING
+Rule 34    expr -> TRUE
+Rule 35    expr -> FALSE
+
+Terminals, with rules where they appear
+
+AT                   : 
+CASE                 : 
+CLASS                : 4 5
+COLON                : 8 9 10 11 14
+COMMA                : 13
+DIVIDE               : 24
+DOT                  : 
+ELSE                 : 
+EQUALS               : 28
+ESAC                 : 
+FALSE                : 35
+FI                   : 
+IDENTIFIER           : 16
+IF                   : 
+IN                   : 
+INHERITS             : 5
+INTEGER              : 32
+ISVOID               : 20
+LARROW               : 9 17
+LBRACE               : 4 5 10 11
+LE                   : 27
+LET                  : 
+LOOP                 : 18
+LPAREN               : 10 11 30
+LT                   : 26
+MINUS                : 22
+NEW                  : 19
+NOT                  : 29
+OF                   : 
+PLUS                 : 21
+POOL                 : 18
+RARROW               : 
+RBRACE               : 4 5 10 11
+RPAREN               : 10 11 30
+SEMI                 : 2 3 7
+STRING               : 33
+THEN                 : 
+TILDE                : 25
+TIMES                : 23
+TRUE                 : 34
+TYPE                 : 15
+WHILE                : 18
+error                : 
+
+Nonterminals, with rules where they appear
+
+class                : 2 3
+classlist            : 1 3
+expr                 : 9 10 11 17 18 18 20 21 21 22 22 23 23 24 24 25 26 26 27 27 28 28 29 30
+feature              : 7
+featurelist          : 4 5 7
+formal               : 12 13
+formallist           : 10 13
+identifier           : 8 9 10 11 14 17 31
+program              : 0
+type                 : 4 5 5 8 9 10 11 14 19
+
+Parsing method: LALR
+
+state 0
+
+    (0) S' -> . program
+    (1) program -> . classlist
+    (2) classlist -> . class SEMI
+    (3) classlist -> . class SEMI classlist
+    (4) class -> . CLASS type LBRACE featurelist RBRACE
+    (5) class -> . CLASS type INHERITS type LBRACE featurelist RBRACE
+
+    CLASS           shift and go to state 2
+
+    classlist                      shift and go to state 1
+    program                        shift and go to state 3
+    class                          shift and go to state 4
+
+state 1
+
+    (1) program -> classlist .
+
+    $end            reduce using rule 1 (program -> classlist .)
+
+
+state 2
+
+    (4) class -> CLASS . type LBRACE featurelist RBRACE
+    (5) class -> CLASS . type INHERITS type LBRACE featurelist RBRACE
+    (15) type -> . TYPE
+
+    TYPE            shift and go to state 5
+
+    type                           shift and go to state 6
+
+state 3
+
+    (0) S' -> program .
+
+
+
+state 4
+
+    (2) classlist -> class . SEMI
+    (3) classlist -> class . SEMI classlist
+
+    SEMI            shift and go to state 7
+
+
+state 5
+
+    (15) type -> TYPE .
+
+    LBRACE          reduce using rule 15 (type -> TYPE .)
+    COMMA           reduce using rule 15 (type -> TYPE .)
+    RPAREN          reduce using rule 15 (type -> TYPE .)
+    INHERITS        reduce using rule 15 (type -> TYPE .)
+    PLUS            reduce using rule 15 (type -> TYPE .)
+    MINUS           reduce using rule 15 (type -> TYPE .)
+    TIMES           reduce using rule 15 (type -> TYPE .)
+    DIVIDE          reduce using rule 15 (type -> TYPE .)
+    LT              reduce using rule 15 (type -> TYPE .)
+    LE              reduce using rule 15 (type -> TYPE .)
+    EQUALS          reduce using rule 15 (type -> TYPE .)
+    SEMI            reduce using rule 15 (type -> TYPE .)
+    LOOP            reduce using rule 15 (type -> TYPE .)
+    RBRACE          reduce using rule 15 (type -> TYPE .)
+    POOL            reduce using rule 15 (type -> TYPE .)
+    LARROW          reduce using rule 15 (type -> TYPE .)
+
+
+state 6
+
+    (4) class -> CLASS type . LBRACE featurelist RBRACE
+    (5) class -> CLASS type . INHERITS type LBRACE featurelist RBRACE
+
+    LBRACE          shift and go to state 9
+    INHERITS        shift and go to state 8
+
+
+state 7
+
+    (2) classlist -> class SEMI .
+    (3) classlist -> class SEMI . classlist
+    (2) classlist -> . class SEMI
+    (3) classlist -> . class SEMI classlist
+    (4) class -> . CLASS type LBRACE featurelist RBRACE
+    (5) class -> . CLASS type INHERITS type LBRACE featurelist RBRACE
+
+    $end            reduce using rule 2 (classlist -> class SEMI .)
+    CLASS           shift and go to state 2
+
+    classlist                      shift and go to state 10
+    class                          shift and go to state 4
+
+state 8
+
+    (5) class -> CLASS type INHERITS . type LBRACE featurelist RBRACE
+    (15) type -> . TYPE
+
+    TYPE            shift and go to state 5
+
+    type                           shift and go to state 11
+
+state 9
+
+    (4) class -> CLASS type LBRACE . featurelist RBRACE
+    (6) featurelist -> .
+    (7) featurelist -> . feature SEMI featurelist
+    (8) feature -> . identifier COLON type
+    (9) feature -> . identifier COLON type LARROW expr
+    (10) feature -> . identifier LPAREN formallist RPAREN COLON type LBRACE expr RBRACE
+    (11) feature -> . identifier LPAREN RPAREN COLON type LBRACE expr RBRACE
+    (16) identifier -> . IDENTIFIER
+
+    RBRACE          reduce using rule 6 (featurelist -> .)
+    IDENTIFIER      shift and go to state 14
+
+    feature                        shift and go to state 12
+    featurelist                    shift and go to state 13
+    identifier                     shift and go to state 15
+
+state 10
+
+    (3) classlist -> class SEMI classlist .
+
+    $end            reduce using rule 3 (classlist -> class SEMI classlist .)
+
+
+state 11
+
+    (5) class -> CLASS type INHERITS type . LBRACE featurelist RBRACE
+
+    LBRACE          shift and go to state 16
+
+
+state 12
+
+    (7) featurelist -> feature . SEMI featurelist
+
+    SEMI            shift and go to state 17
+
+
+state 13
+
+    (4) class -> CLASS type LBRACE featurelist . RBRACE
+
+    RBRACE          shift and go to state 18
+
+
+state 14
+
+    (16) identifier -> IDENTIFIER .
+
+    LARROW          reduce using rule 16 (identifier -> IDENTIFIER .)
+    RBRACE          reduce using rule 16 (identifier -> IDENTIFIER .)
+    PLUS            reduce using rule 16 (identifier -> IDENTIFIER .)
+    MINUS           reduce using rule 16 (identifier -> IDENTIFIER .)
+    TIMES           reduce using rule 16 (identifier -> IDENTIFIER .)
+    DIVIDE          reduce using rule 16 (identifier -> IDENTIFIER .)
+    LT              reduce using rule 16 (identifier -> IDENTIFIER .)
+    LE              reduce using rule 16 (identifier -> IDENTIFIER .)
+    EQUALS          reduce using rule 16 (identifier -> IDENTIFIER .)
+    COLON           reduce using rule 16 (identifier -> IDENTIFIER .)
+    LPAREN          reduce using rule 16 (identifier -> IDENTIFIER .)
+    SEMI            reduce using rule 16 (identifier -> IDENTIFIER .)
+    LOOP            reduce using rule 16 (identifier -> IDENTIFIER .)
+    RPAREN          reduce using rule 16 (identifier -> IDENTIFIER .)
+    POOL            reduce using rule 16 (identifier -> IDENTIFIER .)
+
+
+state 15
+
+    (8) feature -> identifier . COLON type
+    (9) feature -> identifier . COLON type LARROW expr
+    (10) feature -> identifier . LPAREN formallist RPAREN COLON type LBRACE expr RBRACE
+    (11) feature -> identifier . LPAREN RPAREN COLON type LBRACE expr RBRACE
+
+    COLON           shift and go to state 19
+    LPAREN          shift and go to state 20
+
+
+state 16
+
+    (5) class -> CLASS type INHERITS type LBRACE . featurelist RBRACE
+    (6) featurelist -> .
+    (7) featurelist -> . feature SEMI featurelist
+    (8) feature -> . identifier COLON type
+    (9) feature -> . identifier COLON type LARROW expr
+    (10) feature -> . identifier LPAREN formallist RPAREN COLON type LBRACE expr RBRACE
+    (11) feature -> . identifier LPAREN RPAREN COLON type LBRACE expr RBRACE
+    (16) identifier -> . IDENTIFIER
+
+    RBRACE          reduce using rule 6 (featurelist -> .)
+    IDENTIFIER      shift and go to state 14
+
+    feature                        shift and go to state 12
+    featurelist                    shift and go to state 21
+    identifier                     shift and go to state 15
+
+state 17
+
+    (7) featurelist -> feature SEMI . featurelist
+    (6) featurelist -> .
+    (7) featurelist -> . feature SEMI featurelist
+    (8) feature -> . identifier COLON type
+    (9) feature -> . identifier COLON type LARROW expr
+    (10) feature -> . identifier LPAREN formallist RPAREN COLON type LBRACE expr RBRACE
+    (11) feature -> . identifier LPAREN RPAREN COLON type LBRACE expr RBRACE
+    (16) identifier -> . IDENTIFIER
+
+    RBRACE          reduce using rule 6 (featurelist -> .)
+    IDENTIFIER      shift and go to state 14
+
+    feature                        shift and go to state 12
+    featurelist                    shift and go to state 22
+    identifier                     shift and go to state 15
+
+state 18
+
+    (4) class -> CLASS type LBRACE featurelist RBRACE .
+
+    SEMI            reduce using rule 4 (class -> CLASS type LBRACE featurelist RBRACE .)
+
+
+state 19
+
+    (8) feature -> identifier COLON . type
+    (9) feature -> identifier COLON . type LARROW expr
+    (15) type -> . TYPE
+
+    TYPE            shift and go to state 5
+
+    type                           shift and go to state 23
+
+state 20
+
+    (10) feature -> identifier LPAREN . formallist RPAREN COLON type LBRACE expr RBRACE
+    (11) feature -> identifier LPAREN . RPAREN COLON type LBRACE expr RBRACE
+    (12) formallist -> . formal
+    (13) formallist -> . formal COMMA formallist
+    (14) formal -> . identifier COLON type
+    (16) identifier -> . IDENTIFIER
+
+    RPAREN          shift and go to state 24
+    IDENTIFIER      shift and go to state 14
+
+    formal                         shift and go to state 27
+    identifier                     shift and go to state 26
+    formallist                     shift and go to state 25
+
+state 21
+
+    (5) class -> CLASS type INHERITS type LBRACE featurelist . RBRACE
+
+    RBRACE          shift and go to state 28
+
+
+state 22
+
+    (7) featurelist -> feature SEMI featurelist .
+
+    RBRACE          reduce using rule 7 (featurelist -> feature SEMI featurelist .)
+
+
+state 23
+
+    (8) feature -> identifier COLON type .
+    (9) feature -> identifier COLON type . LARROW expr
+
+    SEMI            reduce using rule 8 (feature -> identifier COLON type .)
+    LARROW          shift and go to state 29
+
+
+state 24
+
+    (11) feature -> identifier LPAREN RPAREN . COLON type LBRACE expr RBRACE
+
+    COLON           shift and go to state 30
+
+
+state 25
+
+    (10) feature -> identifier LPAREN formallist . RPAREN COLON type LBRACE expr RBRACE
+
+    RPAREN          shift and go to state 31
+
+
+state 26
+
+    (14) formal -> identifier . COLON type
+
+    COLON           shift and go to state 32
+
+
+state 27
+
+    (12) formallist -> formal .
+    (13) formallist -> formal . COMMA formallist
+
+    RPAREN          reduce using rule 12 (formallist -> formal .)
+    COMMA           shift and go to state 33
+
+
+state 28
+
+    (5) class -> CLASS type INHERITS type LBRACE featurelist RBRACE .
+
+    SEMI            reduce using rule 5 (class -> CLASS type INHERITS type LBRACE featurelist RBRACE .)
+
+
+state 29
+
+    (9) feature -> identifier COLON type LARROW . expr
+    (17) expr -> . identifier LARROW expr
+    (18) expr -> . WHILE expr LOOP expr POOL
+    (19) expr -> . NEW type
+    (20) expr -> . ISVOID expr
+    (21) expr -> . expr PLUS expr
+    (22) expr -> . expr MINUS expr
+    (23) expr -> . expr TIMES expr
+    (24) expr -> . expr DIVIDE expr
+    (25) expr -> . TILDE expr
+    (26) expr -> . expr LT expr
+    (27) expr -> . expr LE expr
+    (28) expr -> . expr EQUALS expr
+    (29) expr -> . NOT expr
+    (30) expr -> . LPAREN expr RPAREN
+    (31) expr -> . identifier
+    (32) expr -> . INTEGER
+    (33) expr -> . STRING
+    (34) expr -> . TRUE
+    (35) expr -> . FALSE
+    (16) identifier -> . IDENTIFIER
+
+    WHILE           shift and go to state 34
+    NEW             shift and go to state 35
+    ISVOID          shift and go to state 38
+    TILDE           shift and go to state 39
+    NOT             shift and go to state 44
+    LPAREN          shift and go to state 41
+    INTEGER         shift and go to state 40
+    STRING          shift and go to state 37
+    TRUE            shift and go to state 36
+    FALSE           shift and go to state 42
+    IDENTIFIER      shift and go to state 14
+
+    expr                           shift and go to state 43
+    identifier                     shift and go to state 45
+
+state 30
+
+    (11) feature -> identifier LPAREN RPAREN COLON . type LBRACE expr RBRACE
+    (15) type -> . TYPE
+
+    TYPE            shift and go to state 5
+
+    type                           shift and go to state 46
+
+state 31
+
+    (10) feature -> identifier LPAREN formallist RPAREN . COLON type LBRACE expr RBRACE
+
+    COLON           shift and go to state 47
+
+
+state 32
+
+    (14) formal -> identifier COLON . type
+    (15) type -> . TYPE
+
+    TYPE            shift and go to state 5
+
+    type                           shift and go to state 48
+
+state 33
+
+    (13) formallist -> formal COMMA . formallist
+    (12) formallist -> . formal
+    (13) formallist -> . formal COMMA formallist
+    (14) formal -> . identifier COLON type
+    (16) identifier -> . IDENTIFIER
+
+    IDENTIFIER      shift and go to state 14
+
+    formallist                     shift and go to state 49
+    identifier                     shift and go to state 26
+    formal                         shift and go to state 27
+
+state 34
+
+    (18) expr -> WHILE . expr LOOP expr POOL
+    (17) expr -> . identifier LARROW expr
+    (18) expr -> . WHILE expr LOOP expr POOL
+    (19) expr -> . NEW type
+    (20) expr -> . ISVOID expr
+    (21) expr -> . expr PLUS expr
+    (22) expr -> . expr MINUS expr
+    (23) expr -> . expr TIMES expr
+    (24) expr -> . expr DIVIDE expr
+    (25) expr -> . TILDE expr
+    (26) expr -> . expr LT expr
+    (27) expr -> . expr LE expr
+    (28) expr -> . expr EQUALS expr
+    (29) expr -> . NOT expr
+    (30) expr -> . LPAREN expr RPAREN
+    (31) expr -> . identifier
+    (32) expr -> . INTEGER
+    (33) expr -> . STRING
+    (34) expr -> . TRUE
+    (35) expr -> . FALSE
+    (16) identifier -> . IDENTIFIER
+
+    WHILE           shift and go to state 34
+    NEW             shift and go to state 35
+    ISVOID          shift and go to state 38
+    TILDE           shift and go to state 39
+    NOT             shift and go to state 44
+    LPAREN          shift and go to state 41
+    INTEGER         shift and go to state 40
+    STRING          shift and go to state 37
+    TRUE            shift and go to state 36
+    FALSE           shift and go to state 42
+    IDENTIFIER      shift and go to state 14
+
+    expr                           shift and go to state 50
+    identifier                     shift and go to state 45
+
+state 35
+
+    (19) expr -> NEW . type
+    (15) type -> . TYPE
+
+    TYPE            shift and go to state 5
+
+    type                           shift and go to state 51
+
+state 36
+
+    (34) expr -> TRUE .
+
+    PLUS            reduce using rule 34 (expr -> TRUE .)
+    MINUS           reduce using rule 34 (expr -> TRUE .)
+    TIMES           reduce using rule 34 (expr -> TRUE .)
+    DIVIDE          reduce using rule 34 (expr -> TRUE .)
+    LT              reduce using rule 34 (expr -> TRUE .)
+    LE              reduce using rule 34 (expr -> TRUE .)
+    EQUALS          reduce using rule 34 (expr -> TRUE .)
+    SEMI            reduce using rule 34 (expr -> TRUE .)
+    LOOP            reduce using rule 34 (expr -> TRUE .)
+    RPAREN          reduce using rule 34 (expr -> TRUE .)
+    RBRACE          reduce using rule 34 (expr -> TRUE .)
+    POOL            reduce using rule 34 (expr -> TRUE .)
+
+
+state 37
+
+    (33) expr -> STRING .
+
+    PLUS            reduce using rule 33 (expr -> STRING .)
+    MINUS           reduce using rule 33 (expr -> STRING .)
+    TIMES           reduce using rule 33 (expr -> STRING .)
+    DIVIDE          reduce using rule 33 (expr -> STRING .)
+    LT              reduce using rule 33 (expr -> STRING .)
+    LE              reduce using rule 33 (expr -> STRING .)
+    EQUALS          reduce using rule 33 (expr -> STRING .)
+    SEMI            reduce using rule 33 (expr -> STRING .)
+    LOOP            reduce using rule 33 (expr -> STRING .)
+    RPAREN          reduce using rule 33 (expr -> STRING .)
+    RBRACE          reduce using rule 33 (expr -> STRING .)
+    POOL            reduce using rule 33 (expr -> STRING .)
+
+
+state 38
+
+    (20) expr -> ISVOID . expr
+    (17) expr -> . identifier LARROW expr
+    (18) expr -> . WHILE expr LOOP expr POOL
+    (19) expr -> . NEW type
+    (20) expr -> . ISVOID expr
+    (21) expr -> . expr PLUS expr
+    (22) expr -> . expr MINUS expr
+    (23) expr -> . expr TIMES expr
+    (24) expr -> . expr DIVIDE expr
+    (25) expr -> . TILDE expr
+    (26) expr -> . expr LT expr
+    (27) expr -> . expr LE expr
+    (28) expr -> . expr EQUALS expr
+    (29) expr -> . NOT expr
+    (30) expr -> . LPAREN expr RPAREN
+    (31) expr -> . identifier
+    (32) expr -> . INTEGER
+    (33) expr -> . STRING
+    (34) expr -> . TRUE
+    (35) expr -> . FALSE
+    (16) identifier -> . IDENTIFIER
+
+    WHILE           shift and go to state 34
+    NEW             shift and go to state 35
+    ISVOID          shift and go to state 38
+    TILDE           shift and go to state 39
+    NOT             shift and go to state 44
+    LPAREN          shift and go to state 41
+    INTEGER         shift and go to state 40
+    STRING          shift and go to state 37
+    TRUE            shift and go to state 36
+    FALSE           shift and go to state 42
+    IDENTIFIER      shift and go to state 14
+
+    expr                           shift and go to state 52
+    identifier                     shift and go to state 45
+
+state 39
+
+    (25) expr -> TILDE . expr
+    (17) expr -> . identifier LARROW expr
+    (18) expr -> . WHILE expr LOOP expr POOL
+    (19) expr -> . NEW type
+    (20) expr -> . ISVOID expr
+    (21) expr -> . expr PLUS expr
+    (22) expr -> . expr MINUS expr
+    (23) expr -> . expr TIMES expr
+    (24) expr -> . expr DIVIDE expr
+    (25) expr -> . TILDE expr
+    (26) expr -> . expr LT expr
+    (27) expr -> . expr LE expr
+    (28) expr -> . expr EQUALS expr
+    (29) expr -> . NOT expr
+    (30) expr -> . LPAREN expr RPAREN
+    (31) expr -> . identifier
+    (32) expr -> . INTEGER
+    (33) expr -> . STRING
+    (34) expr -> . TRUE
+    (35) expr -> . FALSE
+    (16) identifier -> . IDENTIFIER
+
+    WHILE           shift and go to state 34
+    NEW             shift and go to state 35
+    ISVOID          shift and go to state 38
+    TILDE           shift and go to state 39
+    NOT             shift and go to state 44
+    LPAREN          shift and go to state 41
+    INTEGER         shift and go to state 40
+    STRING          shift and go to state 37
+    TRUE            shift and go to state 36
+    FALSE           shift and go to state 42
+    IDENTIFIER      shift and go to state 14
+
+    expr                           shift and go to state 53
+    identifier                     shift and go to state 45
+
+state 40
+
+    (32) expr -> INTEGER .
+
+    PLUS            reduce using rule 32 (expr -> INTEGER .)
+    MINUS           reduce using rule 32 (expr -> INTEGER .)
+    TIMES           reduce using rule 32 (expr -> INTEGER .)
+    DIVIDE          reduce using rule 32 (expr -> INTEGER .)
+    LT              reduce using rule 32 (expr -> INTEGER .)
+    LE              reduce using rule 32 (expr -> INTEGER .)
+    EQUALS          reduce using rule 32 (expr -> INTEGER .)
+    SEMI            reduce using rule 32 (expr -> INTEGER .)
+    LOOP            reduce using rule 32 (expr -> INTEGER .)
+    RPAREN          reduce using rule 32 (expr -> INTEGER .)
+    RBRACE          reduce using rule 32 (expr -> INTEGER .)
+    POOL            reduce using rule 32 (expr -> INTEGER .)
+
+
+state 41
+
+    (30) expr -> LPAREN . expr RPAREN
+    (17) expr -> . identifier LARROW expr
+    (18) expr -> . WHILE expr LOOP expr POOL
+    (19) expr -> . NEW type
+    (20) expr -> . ISVOID expr
+    (21) expr -> . expr PLUS expr
+    (22) expr -> . expr MINUS expr
+    (23) expr -> . expr TIMES expr
+    (24) expr -> . expr DIVIDE expr
+    (25) expr -> . TILDE expr
+    (26) expr -> . expr LT expr
+    (27) expr -> . expr LE expr
+    (28) expr -> . expr EQUALS expr
+    (29) expr -> . NOT expr
+    (30) expr -> . LPAREN expr RPAREN
+    (31) expr -> . identifier
+    (32) expr -> . INTEGER
+    (33) expr -> . STRING
+    (34) expr -> . TRUE
+    (35) expr -> . FALSE
+    (16) identifier -> . IDENTIFIER
+
+    WHILE           shift and go to state 34
+    NEW             shift and go to state 35
+    ISVOID          shift and go to state 38
+    TILDE           shift and go to state 39
+    NOT             shift and go to state 44
+    LPAREN          shift and go to state 41
+    INTEGER         shift and go to state 40
+    STRING          shift and go to state 37
+    TRUE            shift and go to state 36
+    FALSE           shift and go to state 42
+    IDENTIFIER      shift and go to state 14
+
+    expr                           shift and go to state 54
+    identifier                     shift and go to state 45
+
+state 42
+
+    (35) expr -> FALSE .
+
+    PLUS            reduce using rule 35 (expr -> FALSE .)
+    MINUS           reduce using rule 35 (expr -> FALSE .)
+    TIMES           reduce using rule 35 (expr -> FALSE .)
+    DIVIDE          reduce using rule 35 (expr -> FALSE .)
+    LT              reduce using rule 35 (expr -> FALSE .)
+    LE              reduce using rule 35 (expr -> FALSE .)
+    EQUALS          reduce using rule 35 (expr -> FALSE .)
+    SEMI            reduce using rule 35 (expr -> FALSE .)
+    LOOP            reduce using rule 35 (expr -> FALSE .)
+    RPAREN          reduce using rule 35 (expr -> FALSE .)
+    RBRACE          reduce using rule 35 (expr -> FALSE .)
+    POOL            reduce using rule 35 (expr -> FALSE .)
+
+
+state 43
+
+    (9) feature -> identifier COLON type LARROW expr .
+    (21) expr -> expr . PLUS expr
+    (22) expr -> expr . MINUS expr
+    (23) expr -> expr . TIMES expr
+    (24) expr -> expr . DIVIDE expr
+    (26) expr -> expr . LT expr
+    (27) expr -> expr . LE expr
+    (28) expr -> expr . EQUALS expr
+
+    SEMI            reduce using rule 9 (feature -> identifier COLON type LARROW expr .)
+    PLUS            shift and go to state 60
+    MINUS           shift and go to state 61
+    TIMES           shift and go to state 58
+    DIVIDE          shift and go to state 56
+    LT              shift and go to state 59
+    LE              shift and go to state 55
+    EQUALS          shift and go to state 57
+
+
+state 44
+
+    (29) expr -> NOT . expr
+    (17) expr -> . identifier LARROW expr
+    (18) expr -> . WHILE expr LOOP expr POOL
+    (19) expr -> . NEW type
+    (20) expr -> . ISVOID expr
+    (21) expr -> . expr PLUS expr
+    (22) expr -> . expr MINUS expr
+    (23) expr -> . expr TIMES expr
+    (24) expr -> . expr DIVIDE expr
+    (25) expr -> . TILDE expr
+    (26) expr -> . expr LT expr
+    (27) expr -> . expr LE expr
+    (28) expr -> . expr EQUALS expr
+    (29) expr -> . NOT expr
+    (30) expr -> . LPAREN expr RPAREN
+    (31) expr -> . identifier
+    (32) expr -> . INTEGER
+    (33) expr -> . STRING
+    (34) expr -> . TRUE
+    (35) expr -> . FALSE
+    (16) identifier -> . IDENTIFIER
+
+    WHILE           shift and go to state 34
+    NEW             shift and go to state 35
+    ISVOID          shift and go to state 38
+    TILDE           shift and go to state 39
+    NOT             shift and go to state 44
+    LPAREN          shift and go to state 41
+    INTEGER         shift and go to state 40
+    STRING          shift and go to state 37
+    TRUE            shift and go to state 36
+    FALSE           shift and go to state 42
+    IDENTIFIER      shift and go to state 14
+
+    expr                           shift and go to state 62
+    identifier                     shift and go to state 45
+
+state 45
+
+    (17) expr -> identifier . LARROW expr
+    (31) expr -> identifier .
+
+    LARROW          shift and go to state 63
+    PLUS            reduce using rule 31 (expr -> identifier .)
+    MINUS           reduce using rule 31 (expr -> identifier .)
+    TIMES           reduce using rule 31 (expr -> identifier .)
+    DIVIDE          reduce using rule 31 (expr -> identifier .)
+    LT              reduce using rule 31 (expr -> identifier .)
+    LE              reduce using rule 31 (expr -> identifier .)
+    EQUALS          reduce using rule 31 (expr -> identifier .)
+    SEMI            reduce using rule 31 (expr -> identifier .)
+    LOOP            reduce using rule 31 (expr -> identifier .)
+    RPAREN          reduce using rule 31 (expr -> identifier .)
+    RBRACE          reduce using rule 31 (expr -> identifier .)
+    POOL            reduce using rule 31 (expr -> identifier .)
+
+
+state 46
+
+    (11) feature -> identifier LPAREN RPAREN COLON type . LBRACE expr RBRACE
+
+    LBRACE          shift and go to state 64
+
+
+state 47
+
+    (10) feature -> identifier LPAREN formallist RPAREN COLON . type LBRACE expr RBRACE
+    (15) type -> . TYPE
+
+    TYPE            shift and go to state 5
+
+    type                           shift and go to state 65
+
+state 48
+
+    (14) formal -> identifier COLON type .
+
+    COMMA           reduce using rule 14 (formal -> identifier COLON type .)
+    RPAREN          reduce using rule 14 (formal -> identifier COLON type .)
+
+
+state 49
+
+    (13) formallist -> formal COMMA formallist .
+
+    RPAREN          reduce using rule 13 (formallist -> formal COMMA formallist .)
+
+
+state 50
+
+    (18) expr -> WHILE expr . LOOP expr POOL
+    (21) expr -> expr . PLUS expr
+    (22) expr -> expr . MINUS expr
+    (23) expr -> expr . TIMES expr
+    (24) expr -> expr . DIVIDE expr
+    (26) expr -> expr . LT expr
+    (27) expr -> expr . LE expr
+    (28) expr -> expr . EQUALS expr
+
+    LOOP            shift and go to state 66
+    PLUS            shift and go to state 60
+    MINUS           shift and go to state 61
+    TIMES           shift and go to state 58
+    DIVIDE          shift and go to state 56
+    LT              shift and go to state 59
+    LE              shift and go to state 55
+    EQUALS          shift and go to state 57
+
+
+state 51
+
+    (19) expr -> NEW type .
+
+    PLUS            reduce using rule 19 (expr -> NEW type .)
+    MINUS           reduce using rule 19 (expr -> NEW type .)
+    TIMES           reduce using rule 19 (expr -> NEW type .)
+    DIVIDE          reduce using rule 19 (expr -> NEW type .)
+    LT              reduce using rule 19 (expr -> NEW type .)
+    LE              reduce using rule 19 (expr -> NEW type .)
+    EQUALS          reduce using rule 19 (expr -> NEW type .)
+    SEMI            reduce using rule 19 (expr -> NEW type .)
+    LOOP            reduce using rule 19 (expr -> NEW type .)
+    RPAREN          reduce using rule 19 (expr -> NEW type .)
+    RBRACE          reduce using rule 19 (expr -> NEW type .)
+    POOL            reduce using rule 19 (expr -> NEW type .)
+
+
+state 52
+
+    (20) expr -> ISVOID expr .
+    (21) expr -> expr . PLUS expr
+    (22) expr -> expr . MINUS expr
+    (23) expr -> expr . TIMES expr
+    (24) expr -> expr . DIVIDE expr
+    (26) expr -> expr . LT expr
+    (27) expr -> expr . LE expr
+    (28) expr -> expr . EQUALS expr
+
+    PLUS            reduce using rule 20 (expr -> ISVOID expr .)
+    MINUS           reduce using rule 20 (expr -> ISVOID expr .)
+    TIMES           reduce using rule 20 (expr -> ISVOID expr .)
+    DIVIDE          reduce using rule 20 (expr -> ISVOID expr .)
+    LT              reduce using rule 20 (expr -> ISVOID expr .)
+    LE              reduce using rule 20 (expr -> ISVOID expr .)
+    EQUALS          reduce using rule 20 (expr -> ISVOID expr .)
+    SEMI            reduce using rule 20 (expr -> ISVOID expr .)
+    LOOP            reduce using rule 20 (expr -> ISVOID expr .)
+    RPAREN          reduce using rule 20 (expr -> ISVOID expr .)
+    RBRACE          reduce using rule 20 (expr -> ISVOID expr .)
+    POOL            reduce using rule 20 (expr -> ISVOID expr .)
+
+  ! PLUS            [ shift and go to state 60 ]
+  ! MINUS           [ shift and go to state 61 ]
+  ! TIMES           [ shift and go to state 58 ]
+  ! DIVIDE          [ shift and go to state 56 ]
+  ! LT              [ shift and go to state 59 ]
+  ! LE              [ shift and go to state 55 ]
+  ! EQUALS          [ shift and go to state 57 ]
+
+
+state 53
+
+    (25) expr -> TILDE expr .
+    (21) expr -> expr . PLUS expr
+    (22) expr -> expr . MINUS expr
+    (23) expr -> expr . TIMES expr
+    (24) expr -> expr . DIVIDE expr
+    (26) expr -> expr . LT expr
+    (27) expr -> expr . LE expr
+    (28) expr -> expr . EQUALS expr
+
+    PLUS            reduce using rule 25 (expr -> TILDE expr .)
+    MINUS           reduce using rule 25 (expr -> TILDE expr .)
+    TIMES           reduce using rule 25 (expr -> TILDE expr .)
+    DIVIDE          reduce using rule 25 (expr -> TILDE expr .)
+    LT              reduce using rule 25 (expr -> TILDE expr .)
+    LE              reduce using rule 25 (expr -> TILDE expr .)
+    EQUALS          reduce using rule 25 (expr -> TILDE expr .)
+    SEMI            reduce using rule 25 (expr -> TILDE expr .)
+    LOOP            reduce using rule 25 (expr -> TILDE expr .)
+    RPAREN          reduce using rule 25 (expr -> TILDE expr .)
+    RBRACE          reduce using rule 25 (expr -> TILDE expr .)
+    POOL            reduce using rule 25 (expr -> TILDE expr .)
+
+  ! PLUS            [ shift and go to state 60 ]
+  ! MINUS           [ shift and go to state 61 ]
+  ! TIMES           [ shift and go to state 58 ]
+  ! DIVIDE          [ shift and go to state 56 ]
+  ! LT              [ shift and go to state 59 ]
+  ! LE              [ shift and go to state 55 ]
+  ! EQUALS          [ shift and go to state 57 ]
+
+
+state 54
+
+    (30) expr -> LPAREN expr . RPAREN
+    (21) expr -> expr . PLUS expr
+    (22) expr -> expr . MINUS expr
+    (23) expr -> expr . TIMES expr
+    (24) expr -> expr . DIVIDE expr
+    (26) expr -> expr . LT expr
+    (27) expr -> expr . LE expr
+    (28) expr -> expr . EQUALS expr
+
+    RPAREN          shift and go to state 67
+    PLUS            shift and go to state 60
+    MINUS           shift and go to state 61
+    TIMES           shift and go to state 58
+    DIVIDE          shift and go to state 56
+    LT              shift and go to state 59
+    LE              shift and go to state 55
+    EQUALS          shift and go to state 57
+
+
+state 55
+
+    (27) expr -> expr LE . expr
+    (17) expr -> . identifier LARROW expr
+    (18) expr -> . WHILE expr LOOP expr POOL
+    (19) expr -> . NEW type
+    (20) expr -> . ISVOID expr
+    (21) expr -> . expr PLUS expr
+    (22) expr -> . expr MINUS expr
+    (23) expr -> . expr TIMES expr
+    (24) expr -> . expr DIVIDE expr
+    (25) expr -> . TILDE expr
+    (26) expr -> . expr LT expr
+    (27) expr -> . expr LE expr
+    (28) expr -> . expr EQUALS expr
+    (29) expr -> . NOT expr
+    (30) expr -> . LPAREN expr RPAREN
+    (31) expr -> . identifier
+    (32) expr -> . INTEGER
+    (33) expr -> . STRING
+    (34) expr -> . TRUE
+    (35) expr -> . FALSE
+    (16) identifier -> . IDENTIFIER
+
+    WHILE           shift and go to state 34
+    NEW             shift and go to state 35
+    ISVOID          shift and go to state 38
+    TILDE           shift and go to state 39
+    NOT             shift and go to state 44
+    LPAREN          shift and go to state 41
+    INTEGER         shift and go to state 40
+    STRING          shift and go to state 37
+    TRUE            shift and go to state 36
+    FALSE           shift and go to state 42
+    IDENTIFIER      shift and go to state 14
+
+    expr                           shift and go to state 68
+    identifier                     shift and go to state 45
+
+state 56
+
+    (24) expr -> expr DIVIDE . expr
+    (17) expr -> . identifier LARROW expr
+    (18) expr -> . WHILE expr LOOP expr POOL
+    (19) expr -> . NEW type
+    (20) expr -> . ISVOID expr
+    (21) expr -> . expr PLUS expr
+    (22) expr -> . expr MINUS expr
+    (23) expr -> . expr TIMES expr
+    (24) expr -> . expr DIVIDE expr
+    (25) expr -> . TILDE expr
+    (26) expr -> . expr LT expr
+    (27) expr -> . expr LE expr
+    (28) expr -> . expr EQUALS expr
+    (29) expr -> . NOT expr
+    (30) expr -> . LPAREN expr RPAREN
+    (31) expr -> . identifier
+    (32) expr -> . INTEGER
+    (33) expr -> . STRING
+    (34) expr -> . TRUE
+    (35) expr -> . FALSE
+    (16) identifier -> . IDENTIFIER
+
+    WHILE           shift and go to state 34
+    NEW             shift and go to state 35
+    ISVOID          shift and go to state 38
+    TILDE           shift and go to state 39
+    NOT             shift and go to state 44
+    LPAREN          shift and go to state 41
+    INTEGER         shift and go to state 40
+    STRING          shift and go to state 37
+    TRUE            shift and go to state 36
+    FALSE           shift and go to state 42
+    IDENTIFIER      shift and go to state 14
+
+    expr                           shift and go to state 69
+    identifier                     shift and go to state 45
+
+state 57
+
+    (28) expr -> expr EQUALS . expr
+    (17) expr -> . identifier LARROW expr
+    (18) expr -> . WHILE expr LOOP expr POOL
+    (19) expr -> . NEW type
+    (20) expr -> . ISVOID expr
+    (21) expr -> . expr PLUS expr
+    (22) expr -> . expr MINUS expr
+    (23) expr -> . expr TIMES expr
+    (24) expr -> . expr DIVIDE expr
+    (25) expr -> . TILDE expr
+    (26) expr -> . expr LT expr
+    (27) expr -> . expr LE expr
+    (28) expr -> . expr EQUALS expr
+    (29) expr -> . NOT expr
+    (30) expr -> . LPAREN expr RPAREN
+    (31) expr -> . identifier
+    (32) expr -> . INTEGER
+    (33) expr -> . STRING
+    (34) expr -> . TRUE
+    (35) expr -> . FALSE
+    (16) identifier -> . IDENTIFIER
+
+    WHILE           shift and go to state 34
+    NEW             shift and go to state 35
+    ISVOID          shift and go to state 38
+    TILDE           shift and go to state 39
+    NOT             shift and go to state 44
+    LPAREN          shift and go to state 41
+    INTEGER         shift and go to state 40
+    STRING          shift and go to state 37
+    TRUE            shift and go to state 36
+    FALSE           shift and go to state 42
+    IDENTIFIER      shift and go to state 14
+
+    expr                           shift and go to state 70
+    identifier                     shift and go to state 45
+
+state 58
+
+    (23) expr -> expr TIMES . expr
+    (17) expr -> . identifier LARROW expr
+    (18) expr -> . WHILE expr LOOP expr POOL
+    (19) expr -> . NEW type
+    (20) expr -> . ISVOID expr
+    (21) expr -> . expr PLUS expr
+    (22) expr -> . expr MINUS expr
+    (23) expr -> . expr TIMES expr
+    (24) expr -> . expr DIVIDE expr
+    (25) expr -> . TILDE expr
+    (26) expr -> . expr LT expr
+    (27) expr -> . expr LE expr
+    (28) expr -> . expr EQUALS expr
+    (29) expr -> . NOT expr
+    (30) expr -> . LPAREN expr RPAREN
+    (31) expr -> . identifier
+    (32) expr -> . INTEGER
+    (33) expr -> . STRING
+    (34) expr -> . TRUE
+    (35) expr -> . FALSE
+    (16) identifier -> . IDENTIFIER
+
+    WHILE           shift and go to state 34
+    NEW             shift and go to state 35
+    ISVOID          shift and go to state 38
+    TILDE           shift and go to state 39
+    NOT             shift and go to state 44
+    LPAREN          shift and go to state 41
+    INTEGER         shift and go to state 40
+    STRING          shift and go to state 37
+    TRUE            shift and go to state 36
+    FALSE           shift and go to state 42
+    IDENTIFIER      shift and go to state 14
+
+    expr                           shift and go to state 71
+    identifier                     shift and go to state 45
+
+state 59
+
+    (26) expr -> expr LT . expr
+    (17) expr -> . identifier LARROW expr
+    (18) expr -> . WHILE expr LOOP expr POOL
+    (19) expr -> . NEW type
+    (20) expr -> . ISVOID expr
+    (21) expr -> . expr PLUS expr
+    (22) expr -> . expr MINUS expr
+    (23) expr -> . expr TIMES expr
+    (24) expr -> . expr DIVIDE expr
+    (25) expr -> . TILDE expr
+    (26) expr -> . expr LT expr
+    (27) expr -> . expr LE expr
+    (28) expr -> . expr EQUALS expr
+    (29) expr -> . NOT expr
+    (30) expr -> . LPAREN expr RPAREN
+    (31) expr -> . identifier
+    (32) expr -> . INTEGER
+    (33) expr -> . STRING
+    (34) expr -> . TRUE
+    (35) expr -> . FALSE
+    (16) identifier -> . IDENTIFIER
+
+    WHILE           shift and go to state 34
+    NEW             shift and go to state 35
+    ISVOID          shift and go to state 38
+    TILDE           shift and go to state 39
+    NOT             shift and go to state 44
+    LPAREN          shift and go to state 41
+    INTEGER         shift and go to state 40
+    STRING          shift and go to state 37
+    TRUE            shift and go to state 36
+    FALSE           shift and go to state 42
+    IDENTIFIER      shift and go to state 14
+
+    expr                           shift and go to state 72
+    identifier                     shift and go to state 45
+
+state 60
+
+    (21) expr -> expr PLUS . expr
+    (17) expr -> . identifier LARROW expr
+    (18) expr -> . WHILE expr LOOP expr POOL
+    (19) expr -> . NEW type
+    (20) expr -> . ISVOID expr
+    (21) expr -> . expr PLUS expr
+    (22) expr -> . expr MINUS expr
+    (23) expr -> . expr TIMES expr
+    (24) expr -> . expr DIVIDE expr
+    (25) expr -> . TILDE expr
+    (26) expr -> . expr LT expr
+    (27) expr -> . expr LE expr
+    (28) expr -> . expr EQUALS expr
+    (29) expr -> . NOT expr
+    (30) expr -> . LPAREN expr RPAREN
+    (31) expr -> . identifier
+    (32) expr -> . INTEGER
+    (33) expr -> . STRING
+    (34) expr -> . TRUE
+    (35) expr -> . FALSE
+    (16) identifier -> . IDENTIFIER
+
+    WHILE           shift and go to state 34
+    NEW             shift and go to state 35
+    ISVOID          shift and go to state 38
+    TILDE           shift and go to state 39
+    NOT             shift and go to state 44
+    LPAREN          shift and go to state 41
+    INTEGER         shift and go to state 40
+    STRING          shift and go to state 37
+    TRUE            shift and go to state 36
+    FALSE           shift and go to state 42
+    IDENTIFIER      shift and go to state 14
+
+    expr                           shift and go to state 73
+    identifier                     shift and go to state 45
+
+state 61
+
+    (22) expr -> expr MINUS . expr
+    (17) expr -> . identifier LARROW expr
+    (18) expr -> . WHILE expr LOOP expr POOL
+    (19) expr -> . NEW type
+    (20) expr -> . ISVOID expr
+    (21) expr -> . expr PLUS expr
+    (22) expr -> . expr MINUS expr
+    (23) expr -> . expr TIMES expr
+    (24) expr -> . expr DIVIDE expr
+    (25) expr -> . TILDE expr
+    (26) expr -> . expr LT expr
+    (27) expr -> . expr LE expr
+    (28) expr -> . expr EQUALS expr
+    (29) expr -> . NOT expr
+    (30) expr -> . LPAREN expr RPAREN
+    (31) expr -> . identifier
+    (32) expr -> . INTEGER
+    (33) expr -> . STRING
+    (34) expr -> . TRUE
+    (35) expr -> . FALSE
+    (16) identifier -> . IDENTIFIER
+
+    WHILE           shift and go to state 34
+    NEW             shift and go to state 35
+    ISVOID          shift and go to state 38
+    TILDE           shift and go to state 39
+    NOT             shift and go to state 44
+    LPAREN          shift and go to state 41
+    INTEGER         shift and go to state 40
+    STRING          shift and go to state 37
+    TRUE            shift and go to state 36
+    FALSE           shift and go to state 42
+    IDENTIFIER      shift and go to state 14
+
+    expr                           shift and go to state 74
+    identifier                     shift and go to state 45
+
+state 62
+
+    (29) expr -> NOT expr .
+    (21) expr -> expr . PLUS expr
+    (22) expr -> expr . MINUS expr
+    (23) expr -> expr . TIMES expr
+    (24) expr -> expr . DIVIDE expr
+    (26) expr -> expr . LT expr
+    (27) expr -> expr . LE expr
+    (28) expr -> expr . EQUALS expr
+
+    SEMI            reduce using rule 29 (expr -> NOT expr .)
+    LOOP            reduce using rule 29 (expr -> NOT expr .)
+    RPAREN          reduce using rule 29 (expr -> NOT expr .)
+    RBRACE          reduce using rule 29 (expr -> NOT expr .)
+    POOL            reduce using rule 29 (expr -> NOT expr .)
+    PLUS            shift and go to state 60
+    MINUS           shift and go to state 61
+    TIMES           shift and go to state 58
+    DIVIDE          shift and go to state 56
+    LT              shift and go to state 59
+    LE              shift and go to state 55
+    EQUALS          shift and go to state 57
+
+  ! PLUS            [ reduce using rule 29 (expr -> NOT expr .) ]
+  ! MINUS           [ reduce using rule 29 (expr -> NOT expr .) ]
+  ! TIMES           [ reduce using rule 29 (expr -> NOT expr .) ]
+  ! DIVIDE          [ reduce using rule 29 (expr -> NOT expr .) ]
+  ! LT              [ reduce using rule 29 (expr -> NOT expr .) ]
+  ! LE              [ reduce using rule 29 (expr -> NOT expr .) ]
+  ! EQUALS          [ reduce using rule 29 (expr -> NOT expr .) ]
+
+
+state 63
+
+    (17) expr -> identifier LARROW . expr
+    (17) expr -> . identifier LARROW expr
+    (18) expr -> . WHILE expr LOOP expr POOL
+    (19) expr -> . NEW type
+    (20) expr -> . ISVOID expr
+    (21) expr -> . expr PLUS expr
+    (22) expr -> . expr MINUS expr
+    (23) expr -> . expr TIMES expr
+    (24) expr -> . expr DIVIDE expr
+    (25) expr -> . TILDE expr
+    (26) expr -> . expr LT expr
+    (27) expr -> . expr LE expr
+    (28) expr -> . expr EQUALS expr
+    (29) expr -> . NOT expr
+    (30) expr -> . LPAREN expr RPAREN
+    (31) expr -> . identifier
+    (32) expr -> . INTEGER
+    (33) expr -> . STRING
+    (34) expr -> . TRUE
+    (35) expr -> . FALSE
+    (16) identifier -> . IDENTIFIER
+
+    WHILE           shift and go to state 34
+    NEW             shift and go to state 35
+    ISVOID          shift and go to state 38
+    TILDE           shift and go to state 39
+    NOT             shift and go to state 44
+    LPAREN          shift and go to state 41
+    INTEGER         shift and go to state 40
+    STRING          shift and go to state 37
+    TRUE            shift and go to state 36
+    FALSE           shift and go to state 42
+    IDENTIFIER      shift and go to state 14
+
+    expr                           shift and go to state 75
+    identifier                     shift and go to state 45
+
+state 64
+
+    (11) feature -> identifier LPAREN RPAREN COLON type LBRACE . expr RBRACE
+    (17) expr -> . identifier LARROW expr
+    (18) expr -> . WHILE expr LOOP expr POOL
+    (19) expr -> . NEW type
+    (20) expr -> . ISVOID expr
+    (21) expr -> . expr PLUS expr
+    (22) expr -> . expr MINUS expr
+    (23) expr -> . expr TIMES expr
+    (24) expr -> . expr DIVIDE expr
+    (25) expr -> . TILDE expr
+    (26) expr -> . expr LT expr
+    (27) expr -> . expr LE expr
+    (28) expr -> . expr EQUALS expr
+    (29) expr -> . NOT expr
+    (30) expr -> . LPAREN expr RPAREN
+    (31) expr -> . identifier
+    (32) expr -> . INTEGER
+    (33) expr -> . STRING
+    (34) expr -> . TRUE
+    (35) expr -> . FALSE
+    (16) identifier -> . IDENTIFIER
+
+    WHILE           shift and go to state 34
+    NEW             shift and go to state 35
+    ISVOID          shift and go to state 38
+    TILDE           shift and go to state 39
+    NOT             shift and go to state 44
+    LPAREN          shift and go to state 41
+    INTEGER         shift and go to state 40
+    STRING          shift and go to state 37
+    TRUE            shift and go to state 36
+    FALSE           shift and go to state 42
+    IDENTIFIER      shift and go to state 14
+
+    expr                           shift and go to state 76
+    identifier                     shift and go to state 45
+
+state 65
+
+    (10) feature -> identifier LPAREN formallist RPAREN COLON type . LBRACE expr RBRACE
+
+    LBRACE          shift and go to state 77
+
+
+state 66
+
+    (18) expr -> WHILE expr LOOP . expr POOL
+    (17) expr -> . identifier LARROW expr
+    (18) expr -> . WHILE expr LOOP expr POOL
+    (19) expr -> . NEW type
+    (20) expr -> . ISVOID expr
+    (21) expr -> . expr PLUS expr
+    (22) expr -> . expr MINUS expr
+    (23) expr -> . expr TIMES expr
+    (24) expr -> . expr DIVIDE expr
+    (25) expr -> . TILDE expr
+    (26) expr -> . expr LT expr
+    (27) expr -> . expr LE expr
+    (28) expr -> . expr EQUALS expr
+    (29) expr -> . NOT expr
+    (30) expr -> . LPAREN expr RPAREN
+    (31) expr -> . identifier
+    (32) expr -> . INTEGER
+    (33) expr -> . STRING
+    (34) expr -> . TRUE
+    (35) expr -> . FALSE
+    (16) identifier -> . IDENTIFIER
+
+    WHILE           shift and go to state 34
+    NEW             shift and go to state 35
+    ISVOID          shift and go to state 38
+    TILDE           shift and go to state 39
+    NOT             shift and go to state 44
+    LPAREN          shift and go to state 41
+    INTEGER         shift and go to state 40
+    STRING          shift and go to state 37
+    TRUE            shift and go to state 36
+    FALSE           shift and go to state 42
+    IDENTIFIER      shift and go to state 14
+
+    expr                           shift and go to state 78
+    identifier                     shift and go to state 45
+
+state 67
+
+    (30) expr -> LPAREN expr RPAREN .
+
+    PLUS            reduce using rule 30 (expr -> LPAREN expr RPAREN .)
+    MINUS           reduce using rule 30 (expr -> LPAREN expr RPAREN .)
+    TIMES           reduce using rule 30 (expr -> LPAREN expr RPAREN .)
+    DIVIDE          reduce using rule 30 (expr -> LPAREN expr RPAREN .)
+    LT              reduce using rule 30 (expr -> LPAREN expr RPAREN .)
+    LE              reduce using rule 30 (expr -> LPAREN expr RPAREN .)
+    EQUALS          reduce using rule 30 (expr -> LPAREN expr RPAREN .)
+    SEMI            reduce using rule 30 (expr -> LPAREN expr RPAREN .)
+    LOOP            reduce using rule 30 (expr -> LPAREN expr RPAREN .)
+    RPAREN          reduce using rule 30 (expr -> LPAREN expr RPAREN .)
+    RBRACE          reduce using rule 30 (expr -> LPAREN expr RPAREN .)
+    POOL            reduce using rule 30 (expr -> LPAREN expr RPAREN .)
+
+
+state 68
+
+    (27) expr -> expr LE expr .
+    (21) expr -> expr . PLUS expr
+    (22) expr -> expr . MINUS expr
+    (23) expr -> expr . TIMES expr
+    (24) expr -> expr . DIVIDE expr
+    (26) expr -> expr . LT expr
+    (27) expr -> expr . LE expr
+    (28) expr -> expr . EQUALS expr
+
+    LT              reduce using rule 27 (expr -> expr LE expr .)
+    LE              reduce using rule 27 (expr -> expr LE expr .)
+    EQUALS          reduce using rule 27 (expr -> expr LE expr .)
+    SEMI            reduce using rule 27 (expr -> expr LE expr .)
+    LOOP            reduce using rule 27 (expr -> expr LE expr .)
+    RPAREN          reduce using rule 27 (expr -> expr LE expr .)
+    RBRACE          reduce using rule 27 (expr -> expr LE expr .)
+    POOL            reduce using rule 27 (expr -> expr LE expr .)
+    PLUS            shift and go to state 60
+    MINUS           shift and go to state 61
+    TIMES           shift and go to state 58
+    DIVIDE          shift and go to state 56
+
+  ! PLUS            [ reduce using rule 27 (expr -> expr LE expr .) ]
+  ! MINUS           [ reduce using rule 27 (expr -> expr LE expr .) ]
+  ! TIMES           [ reduce using rule 27 (expr -> expr LE expr .) ]
+  ! DIVIDE          [ reduce using rule 27 (expr -> expr LE expr .) ]
+  ! LT              [ shift and go to state 59 ]
+  ! LE              [ shift and go to state 55 ]
+  ! EQUALS          [ shift and go to state 57 ]
+
+
+state 69
+
+    (24) expr -> expr DIVIDE expr .
+    (21) expr -> expr . PLUS expr
+    (22) expr -> expr . MINUS expr
+    (23) expr -> expr . TIMES expr
+    (24) expr -> expr . DIVIDE expr
+    (26) expr -> expr . LT expr
+    (27) expr -> expr . LE expr
+    (28) expr -> expr . EQUALS expr
+
+    PLUS            reduce using rule 24 (expr -> expr DIVIDE expr .)
+    MINUS           reduce using rule 24 (expr -> expr DIVIDE expr .)
+    TIMES           reduce using rule 24 (expr -> expr DIVIDE expr .)
+    DIVIDE          reduce using rule 24 (expr -> expr DIVIDE expr .)
+    LT              reduce using rule 24 (expr -> expr DIVIDE expr .)
+    LE              reduce using rule 24 (expr -> expr DIVIDE expr .)
+    EQUALS          reduce using rule 24 (expr -> expr DIVIDE expr .)
+    SEMI            reduce using rule 24 (expr -> expr DIVIDE expr .)
+    LOOP            reduce using rule 24 (expr -> expr DIVIDE expr .)
+    RPAREN          reduce using rule 24 (expr -> expr DIVIDE expr .)
+    RBRACE          reduce using rule 24 (expr -> expr DIVIDE expr .)
+    POOL            reduce using rule 24 (expr -> expr DIVIDE expr .)
+
+  ! PLUS            [ shift and go to state 60 ]
+  ! MINUS           [ shift and go to state 61 ]
+  ! TIMES           [ shift and go to state 58 ]
+  ! DIVIDE          [ shift and go to state 56 ]
+  ! LT              [ shift and go to state 59 ]
+  ! LE              [ shift and go to state 55 ]
+  ! EQUALS          [ shift and go to state 57 ]
+
+
+state 70
+
+    (28) expr -> expr EQUALS expr .
+    (21) expr -> expr . PLUS expr
+    (22) expr -> expr . MINUS expr
+    (23) expr -> expr . TIMES expr
+    (24) expr -> expr . DIVIDE expr
+    (26) expr -> expr . LT expr
+    (27) expr -> expr . LE expr
+    (28) expr -> expr . EQUALS expr
+
+    LT              reduce using rule 28 (expr -> expr EQUALS expr .)
+    LE              reduce using rule 28 (expr -> expr EQUALS expr .)
+    EQUALS          reduce using rule 28 (expr -> expr EQUALS expr .)
+    SEMI            reduce using rule 28 (expr -> expr EQUALS expr .)
+    LOOP            reduce using rule 28 (expr -> expr EQUALS expr .)
+    RPAREN          reduce using rule 28 (expr -> expr EQUALS expr .)
+    RBRACE          reduce using rule 28 (expr -> expr EQUALS expr .)
+    POOL            reduce using rule 28 (expr -> expr EQUALS expr .)
+    PLUS            shift and go to state 60
+    MINUS           shift and go to state 61
+    TIMES           shift and go to state 58
+    DIVIDE          shift and go to state 56
+
+  ! PLUS            [ reduce using rule 28 (expr -> expr EQUALS expr .) ]
+  ! MINUS           [ reduce using rule 28 (expr -> expr EQUALS expr .) ]
+  ! TIMES           [ reduce using rule 28 (expr -> expr EQUALS expr .) ]
+  ! DIVIDE          [ reduce using rule 28 (expr -> expr EQUALS expr .) ]
+  ! LT              [ shift and go to state 59 ]
+  ! LE              [ shift and go to state 55 ]
+  ! EQUALS          [ shift and go to state 57 ]
+
+
+state 71
+
+    (23) expr -> expr TIMES expr .
+    (21) expr -> expr . PLUS expr
+    (22) expr -> expr . MINUS expr
+    (23) expr -> expr . TIMES expr
+    (24) expr -> expr . DIVIDE expr
+    (26) expr -> expr . LT expr
+    (27) expr -> expr . LE expr
+    (28) expr -> expr . EQUALS expr
+
+    PLUS            reduce using rule 23 (expr -> expr TIMES expr .)
+    MINUS           reduce using rule 23 (expr -> expr TIMES expr .)
+    TIMES           reduce using rule 23 (expr -> expr TIMES expr .)
+    DIVIDE          reduce using rule 23 (expr -> expr TIMES expr .)
+    LT              reduce using rule 23 (expr -> expr TIMES expr .)
+    LE              reduce using rule 23 (expr -> expr TIMES expr .)
+    EQUALS          reduce using rule 23 (expr -> expr TIMES expr .)
+    SEMI            reduce using rule 23 (expr -> expr TIMES expr .)
+    LOOP            reduce using rule 23 (expr -> expr TIMES expr .)
+    RPAREN          reduce using rule 23 (expr -> expr TIMES expr .)
+    RBRACE          reduce using rule 23 (expr -> expr TIMES expr .)
+    POOL            reduce using rule 23 (expr -> expr TIMES expr .)
+
+  ! PLUS            [ shift and go to state 60 ]
+  ! MINUS           [ shift and go to state 61 ]
+  ! TIMES           [ shift and go to state 58 ]
+  ! DIVIDE          [ shift and go to state 56 ]
+  ! LT              [ shift and go to state 59 ]
+  ! LE              [ shift and go to state 55 ]
+  ! EQUALS          [ shift and go to state 57 ]
+
+
+state 72
+
+    (26) expr -> expr LT expr .
+    (21) expr -> expr . PLUS expr
+    (22) expr -> expr . MINUS expr
+    (23) expr -> expr . TIMES expr
+    (24) expr -> expr . DIVIDE expr
+    (26) expr -> expr . LT expr
+    (27) expr -> expr . LE expr
+    (28) expr -> expr . EQUALS expr
+
+    LT              reduce using rule 26 (expr -> expr LT expr .)
+    LE              reduce using rule 26 (expr -> expr LT expr .)
+    EQUALS          reduce using rule 26 (expr -> expr LT expr .)
+    SEMI            reduce using rule 26 (expr -> expr LT expr .)
+    LOOP            reduce using rule 26 (expr -> expr LT expr .)
+    RPAREN          reduce using rule 26 (expr -> expr LT expr .)
+    RBRACE          reduce using rule 26 (expr -> expr LT expr .)
+    POOL            reduce using rule 26 (expr -> expr LT expr .)
+    PLUS            shift and go to state 60
+    MINUS           shift and go to state 61
+    TIMES           shift and go to state 58
+    DIVIDE          shift and go to state 56
+
+  ! PLUS            [ reduce using rule 26 (expr -> expr LT expr .) ]
+  ! MINUS           [ reduce using rule 26 (expr -> expr LT expr .) ]
+  ! TIMES           [ reduce using rule 26 (expr -> expr LT expr .) ]
+  ! DIVIDE          [ reduce using rule 26 (expr -> expr LT expr .) ]
+  ! LT              [ shift and go to state 59 ]
+  ! LE              [ shift and go to state 55 ]
+  ! EQUALS          [ shift and go to state 57 ]
+
+
+state 73
+
+    (21) expr -> expr PLUS expr .
+    (21) expr -> expr . PLUS expr
+    (22) expr -> expr . MINUS expr
+    (23) expr -> expr . TIMES expr
+    (24) expr -> expr . DIVIDE expr
+    (26) expr -> expr . LT expr
+    (27) expr -> expr . LE expr
+    (28) expr -> expr . EQUALS expr
+
+    PLUS            reduce using rule 21 (expr -> expr PLUS expr .)
+    MINUS           reduce using rule 21 (expr -> expr PLUS expr .)
+    LT              reduce using rule 21 (expr -> expr PLUS expr .)
+    LE              reduce using rule 21 (expr -> expr PLUS expr .)
+    EQUALS          reduce using rule 21 (expr -> expr PLUS expr .)
+    SEMI            reduce using rule 21 (expr -> expr PLUS expr .)
+    LOOP            reduce using rule 21 (expr -> expr PLUS expr .)
+    RPAREN          reduce using rule 21 (expr -> expr PLUS expr .)
+    RBRACE          reduce using rule 21 (expr -> expr PLUS expr .)
+    POOL            reduce using rule 21 (expr -> expr PLUS expr .)
+    TIMES           shift and go to state 58
+    DIVIDE          shift and go to state 56
+
+  ! TIMES           [ reduce using rule 21 (expr -> expr PLUS expr .) ]
+  ! DIVIDE          [ reduce using rule 21 (expr -> expr PLUS expr .) ]
+  ! PLUS            [ shift and go to state 60 ]
+  ! MINUS           [ shift and go to state 61 ]
+  ! LT              [ shift and go to state 59 ]
+  ! LE              [ shift and go to state 55 ]
+  ! EQUALS          [ shift and go to state 57 ]
+
+
+state 74
+
+    (22) expr -> expr MINUS expr .
+    (21) expr -> expr . PLUS expr
+    (22) expr -> expr . MINUS expr
+    (23) expr -> expr . TIMES expr
+    (24) expr -> expr . DIVIDE expr
+    (26) expr -> expr . LT expr
+    (27) expr -> expr . LE expr
+    (28) expr -> expr . EQUALS expr
+
+    PLUS            reduce using rule 22 (expr -> expr MINUS expr .)
+    MINUS           reduce using rule 22 (expr -> expr MINUS expr .)
+    LT              reduce using rule 22 (expr -> expr MINUS expr .)
+    LE              reduce using rule 22 (expr -> expr MINUS expr .)
+    EQUALS          reduce using rule 22 (expr -> expr MINUS expr .)
+    SEMI            reduce using rule 22 (expr -> expr MINUS expr .)
+    LOOP            reduce using rule 22 (expr -> expr MINUS expr .)
+    RPAREN          reduce using rule 22 (expr -> expr MINUS expr .)
+    RBRACE          reduce using rule 22 (expr -> expr MINUS expr .)
+    POOL            reduce using rule 22 (expr -> expr MINUS expr .)
+    TIMES           shift and go to state 58
+    DIVIDE          shift and go to state 56
+
+  ! TIMES           [ reduce using rule 22 (expr -> expr MINUS expr .) ]
+  ! DIVIDE          [ reduce using rule 22 (expr -> expr MINUS expr .) ]
+  ! PLUS            [ shift and go to state 60 ]
+  ! MINUS           [ shift and go to state 61 ]
+  ! LT              [ shift and go to state 59 ]
+  ! LE              [ shift and go to state 55 ]
+  ! EQUALS          [ shift and go to state 57 ]
+
+
+state 75
+
+    (17) expr -> identifier LARROW expr .
+    (21) expr -> expr . PLUS expr
+    (22) expr -> expr . MINUS expr
+    (23) expr -> expr . TIMES expr
+    (24) expr -> expr . DIVIDE expr
+    (26) expr -> expr . LT expr
+    (27) expr -> expr . LE expr
+    (28) expr -> expr . EQUALS expr
+
+    SEMI            reduce using rule 17 (expr -> identifier LARROW expr .)
+    LOOP            reduce using rule 17 (expr -> identifier LARROW expr .)
+    RPAREN          reduce using rule 17 (expr -> identifier LARROW expr .)
+    RBRACE          reduce using rule 17 (expr -> identifier LARROW expr .)
+    POOL            reduce using rule 17 (expr -> identifier LARROW expr .)
+    PLUS            shift and go to state 60
+    MINUS           shift and go to state 61
+    TIMES           shift and go to state 58
+    DIVIDE          shift and go to state 56
+    LT              shift and go to state 59
+    LE              shift and go to state 55
+    EQUALS          shift and go to state 57
+
+  ! PLUS            [ reduce using rule 17 (expr -> identifier LARROW expr .) ]
+  ! MINUS           [ reduce using rule 17 (expr -> identifier LARROW expr .) ]
+  ! TIMES           [ reduce using rule 17 (expr -> identifier LARROW expr .) ]
+  ! DIVIDE          [ reduce using rule 17 (expr -> identifier LARROW expr .) ]
+  ! LT              [ reduce using rule 17 (expr -> identifier LARROW expr .) ]
+  ! LE              [ reduce using rule 17 (expr -> identifier LARROW expr .) ]
+  ! EQUALS          [ reduce using rule 17 (expr -> identifier LARROW expr .) ]
+
+
+state 76
+
+    (11) feature -> identifier LPAREN RPAREN COLON type LBRACE expr . RBRACE
+    (21) expr -> expr . PLUS expr
+    (22) expr -> expr . MINUS expr
+    (23) expr -> expr . TIMES expr
+    (24) expr -> expr . DIVIDE expr
+    (26) expr -> expr . LT expr
+    (27) expr -> expr . LE expr
+    (28) expr -> expr . EQUALS expr
+
+    RBRACE          shift and go to state 79
+    PLUS            shift and go to state 60
+    MINUS           shift and go to state 61
+    TIMES           shift and go to state 58
+    DIVIDE          shift and go to state 56
+    LT              shift and go to state 59
+    LE              shift and go to state 55
+    EQUALS          shift and go to state 57
+
+
+state 77
+
+    (10) feature -> identifier LPAREN formallist RPAREN COLON type LBRACE . expr RBRACE
+    (17) expr -> . identifier LARROW expr
+    (18) expr -> . WHILE expr LOOP expr POOL
+    (19) expr -> . NEW type
+    (20) expr -> . ISVOID expr
+    (21) expr -> . expr PLUS expr
+    (22) expr -> . expr MINUS expr
+    (23) expr -> . expr TIMES expr
+    (24) expr -> . expr DIVIDE expr
+    (25) expr -> . TILDE expr
+    (26) expr -> . expr LT expr
+    (27) expr -> . expr LE expr
+    (28) expr -> . expr EQUALS expr
+    (29) expr -> . NOT expr
+    (30) expr -> . LPAREN expr RPAREN
+    (31) expr -> . identifier
+    (32) expr -> . INTEGER
+    (33) expr -> . STRING
+    (34) expr -> . TRUE
+    (35) expr -> . FALSE
+    (16) identifier -> . IDENTIFIER
+
+    WHILE           shift and go to state 34
+    NEW             shift and go to state 35
+    ISVOID          shift and go to state 38
+    TILDE           shift and go to state 39
+    NOT             shift and go to state 44
+    LPAREN          shift and go to state 41
+    INTEGER         shift and go to state 40
+    STRING          shift and go to state 37
+    TRUE            shift and go to state 36
+    FALSE           shift and go to state 42
+    IDENTIFIER      shift and go to state 14
+
+    identifier                     shift and go to state 45
+    expr                           shift and go to state 80
+
+state 78
+
+    (18) expr -> WHILE expr LOOP expr . POOL
+    (21) expr -> expr . PLUS expr
+    (22) expr -> expr . MINUS expr
+    (23) expr -> expr . TIMES expr
+    (24) expr -> expr . DIVIDE expr
+    (26) expr -> expr . LT expr
+    (27) expr -> expr . LE expr
+    (28) expr -> expr . EQUALS expr
+
+    POOL            shift and go to state 81
+    PLUS            shift and go to state 60
+    MINUS           shift and go to state 61
+    TIMES           shift and go to state 58
+    DIVIDE          shift and go to state 56
+    LT              shift and go to state 59
+    LE              shift and go to state 55
+    EQUALS          shift and go to state 57
+
+
+state 79
+
+    (11) feature -> identifier LPAREN RPAREN COLON type LBRACE expr RBRACE .
+
+    SEMI            reduce using rule 11 (feature -> identifier LPAREN RPAREN COLON type LBRACE expr RBRACE .)
+
+
+state 80
+
+    (10) feature -> identifier LPAREN formallist RPAREN COLON type LBRACE expr . RBRACE
+    (21) expr -> expr . PLUS expr
+    (22) expr -> expr . MINUS expr
+    (23) expr -> expr . TIMES expr
+    (24) expr -> expr . DIVIDE expr
+    (26) expr -> expr . LT expr
+    (27) expr -> expr . LE expr
+    (28) expr -> expr . EQUALS expr
+
+    RBRACE          shift and go to state 82
+    PLUS            shift and go to state 60
+    MINUS           shift and go to state 61
+    TIMES           shift and go to state 58
+    DIVIDE          shift and go to state 56
+    LT              shift and go to state 59
+    LE              shift and go to state 55
+    EQUALS          shift and go to state 57
+
+
+state 81
+
+    (18) expr -> WHILE expr LOOP expr POOL .
+
+    PLUS            reduce using rule 18 (expr -> WHILE expr LOOP expr POOL .)
+    MINUS           reduce using rule 18 (expr -> WHILE expr LOOP expr POOL .)
+    TIMES           reduce using rule 18 (expr -> WHILE expr LOOP expr POOL .)
+    DIVIDE          reduce using rule 18 (expr -> WHILE expr LOOP expr POOL .)
+    LT              reduce using rule 18 (expr -> WHILE expr LOOP expr POOL .)
+    LE              reduce using rule 18 (expr -> WHILE expr LOOP expr POOL .)
+    EQUALS          reduce using rule 18 (expr -> WHILE expr LOOP expr POOL .)
+    SEMI            reduce using rule 18 (expr -> WHILE expr LOOP expr POOL .)
+    LOOP            reduce using rule 18 (expr -> WHILE expr LOOP expr POOL .)
+    RPAREN          reduce using rule 18 (expr -> WHILE expr LOOP expr POOL .)
+    RBRACE          reduce using rule 18 (expr -> WHILE expr LOOP expr POOL .)
+    POOL            reduce using rule 18 (expr -> WHILE expr LOOP expr POOL .)
+
+
+state 82
+
+    (10) feature -> identifier LPAREN formallist RPAREN COLON type LBRACE expr RBRACE .
+
+    SEMI            reduce using rule 10 (feature -> identifier LPAREN formallist RPAREN COLON type LBRACE expr RBRACE .)
+

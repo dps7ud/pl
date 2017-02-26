@@ -44,6 +44,7 @@ while token_lines:
 
 pa2lexer = Pa2Lexer()
 
+
 tokens = (
     'AT',
     'CASE',
@@ -87,7 +88,20 @@ tokens = (
     'TRUE',
     'TYPE',
     'WHILE'
-    )
+)
+
+precedence = (
+        ('right', 'LARROW'),
+        ('right', 'NOT'),
+        ('nonassoc', 'LE', 'LT', 'EQUALS'),
+        ('left', 'PLUS', 'MINUS'),
+        ('left', 'TIMES', 'DIVIDE'),
+        ('right', 'ISVOID'),
+        ('right', 'TILDE'),
+        ('left', 'AT'),
+        ('left', 'DOT')
+)
+
 
 def p_program_classlist(p):
     'program : classlist'
@@ -103,19 +117,11 @@ def p_classlist_many(p):
 
 def p_class_noinherit(p):
     'class : CLASS type LBRACE featurelist RBRACE'
-    p[0] = (p.lineno(1), 'class_noinherit', p[2], p[4])
+    p[0] = (p.lineno(1), 'no_inherits', p[2], p[4])
 
 def p_class_inherit(p):
     'class : CLASS type INHERITS type LBRACE featurelist RBRACE'
-    p[0] = (p.lineno(1), 'class_inherit', p[2], p[4], p[6])
-
-def p_type(p):
-    'type : TYPE'
-    p[0] = (p.lineno(1), p[1])
-
-def p_identifier(p):
-    'identifier : IDENTIFIER'
-    p[0] = (p.lineno(1), p[1])
+    p[0] = (p.lineno(1), 'inherits', p[2], p[4], p[6])
 
 def p_featurelist_none(p):
     'featurelist : '
@@ -130,28 +136,144 @@ def p_feature_attributenoinit(p):
     p[0] = (p.lineno(1), 'attribute_no_init', p[1], p[3])
 
 def p_feature_attributeinit(p):
-    'feature : identifier COLON type LARROW exp'
+    'feature : identifier COLON type LARROW expr'
     p[0] = (p.lineno(1), 'attribute_init', p[1], p[3], p[5])
 
-def p_exp_integer(p):
-    'exp : INTEGER'
+def p_feature_method_args(p):
+    'feature : identifier LPAREN formallist RPAREN COLON type LBRACE expr RBRACE'
+    p[0] = ((p[1])[0], 'method', p[1], p[3], p[6], p[8])
+
+def p_feature_method_noargs(p):
+    'feature : identifier LPAREN RPAREN COLON type LBRACE expr RBRACE'
+    p[0] = ((p[1])[0], 'method', p[1], p[5], p[7])
+
+def p_formallist_one(p):
+    'formallist : formal'
+    p[0] = [p[1]]
+
+def p_formallist_some(p):
+    'formallist : formal COMMA formallist'
+    p[0] = [p[1]] + p[3]
+
+def p_formal_only(p):
+    'formal : identifier COLON type'
+    p[0] = ((p[1])[0], p[1], p[3])
+
+def p_type(p):
+    'type : TYPE'
+    p[0] = (p.lineno(1), p[1])
+
+def p_identifier(p):
+    'identifier : IDENTIFIER'
+    p[0] = (p.lineno(1), p[1])
+
+#Expressions#
+#############
+
+def p_expr_assign(p):
+    'expr : identifier LARROW expr'
+    #p[0] = ((p[1])[0], 'assign', p[1], p[3])
+    p[0] = (p.lineno(1), 'assign', p[1], p[3])
+
+#def p_expr_dynamic_dispatch(p):
+#    'expr : expr DOT identifier LPAREN arglist RPAREN'
+#
+#def p_expr_static_dispatch(p):
+#    'expr : expr AT type DOT identifier LPAREN arglist RPAREN'
+#
+#def p_expr_self_dispatch(p):
+#    'expr : identifier LPAREN arglist RPAREN'
+
+#def p_arglist_some(p):
+#    'arglist : expr COMMA arglist'
+#
+#def p_arglist_none(p):
+#    'arglist : '
+
+#def p_expr_if(p):
+#    'expr : IF expr THEN expr ELSE expr'
+#
+def p_expr_while(p):
+    'expr : WHILE expr LOOP expr POOL'
+    p[0] = (p.lineno(1), 'while', p[2], p[4])
+
+#def p_expr_block(p):
+#    'expr : LBRACE exprlist RBRACE'
+#
+#def p_exprlist_one(p):
+#    'exprlist : expr'
+#
+#def p_exprlist_many(p):
+#    'exprlist : expr SEMI exprlist'
+
+def p_expr_new(p):
+    'expr : NEW type'
+    p[0] = (p.lineno(1), 'new', p[2])
+
+def p_expr_isvoid(p):
+    'expr : ISVOID expr'
+    p[0] = (p.lineno(1), 'isvoid', p[2])
+
+def p_expr_plus(p):
+    'expr : expr PLUS expr'
+    p[0] = ((p[1])[0], 'plus', p[1], p[3])
+
+def p_expr_minus(p):
+    'expr : expr MINUS expr'
+    p[0] = ((p[1])[0], 'minus', p[1], p[3])
+
+def p_expr_times(p):
+    'expr : expr TIMES expr'
+    p[0] = ((p[1])[0], 'times', p[1], p[3])
+
+def p_expr_divide(p):
+    'expr : expr DIVIDE expr'
+    p[0] = ((p[1])[0], 'divide', p[1], p[3])
+
+def p_expr_negate(p):
+    'expr : TILDE expr'
+    p[0] = (p.lineno(1), 'negate', p[2])
+
+def p_expr_lt(p):
+    'expr : expr LT expr'
+    p[0] = ((p[1])[0], 'lt', p[1], p[3])
+
+def p_expr_le(p):
+    'expr : expr LE expr'
+    p[0] = ((p[1])[0], 'le', p[1], p[3])
+
+def p_expr_equals(p):
+    'expr : expr EQUALS expr'
+    p[0] = ((p[1])[0], 'eq', p[1], p[3])
+
+def p_expr_not(p):
+    'expr : NOT expr'
+    p[0] = (p.lineno(1), 'not', p[2])
+
+def p_expr_parens(p):
+    'expr : LPAREN expr RPAREN'
+    p[0] = p[2]
+#    p[0] = (p.lineno(1), p[2])
+    
+def p_expr_identifier(p):
+    'expr : identifier'
+    p[0] = ((p[1])[0], 'identifier', p[1])
+
+def p_expr_integer(p):
+    'expr : INTEGER'
     p[0] = (p.lineno(1), 'integer', p[1])
     
-def p_exp_plus(p):
-    'exp : exp PLUS exp'
-    p[0] = (p.lineno(1), 'plus', p[1], p[3])
+def p_expr_string(p):
+    'expr : STRING'
+    p[0] = (p.lineno(1), 'string', p[1])
 
-def p_exp_minus(p):
-    'exp : exp MINUS exp'
-    p[0] = (p.lineno(1), 'minus', p[1], p[3])
+def p_expr_true(p):
+    'expr : TRUE'
+    p[0] = (p.lineno(1), 'true')
 
-def p_exp_times(p):
-    'exp : exp TIMES exp'
-    p[0] = (p.lineno(1), 'times', p[1], p[3])
-
-def p_exp_divide(p):
-    'exp : exp DIVIDE exp'
-    p[0] = (p.lineno(1), 'divide', p[1], p[3])
+def p_expr_false(p):
+    'expr : FALSE'
+    p[0] = (p.lineno(1), 'false')
 
 def p_error(p):
     if p:
@@ -159,6 +281,7 @@ def p_error(p):
         exit(1)
     else:
         print "Syntax error at EOF" #EOF lineno
+
 
 ###Output###
 ############
@@ -169,39 +292,113 @@ def print_list(ast, print_element_func):
         print_element_func(elem)
 
 def print_class(ast):
-    '''class : CLASS type LBRACE featurelist RBRACE
-           | CLASS type INHERITS type LBRACE featurelist RBRACE'''
-    if len(ast) == 5:
+    if ast[1] == 'inherits':
+        # p[0] = (p.lineno(1), 'class_inherit', p[2], p[4], p[6])
         print_identifier(ast[2])
         out_file.write("inherits\n")
         print_identifier(ast[3])
         print_list(ast[4], print_feature)
-    else:
+    elif ast[1] == 'no_inherits':
+        # p[0] = (p.lineno(1), 'class_noinherit', p[2], p[4])
         print_identifier(ast[2])
         out_file.write("no_inherits\n")
         print_list(ast[3], print_feature)
+    else:
+        print("Error: not a class")
+        print(ast[1])
+        exit(0)
 
-def print_exp(ast):
-    
+two_exprs = {'plus', 'times', 'divide', 'minus', 'lt', 'le', 'eq', 'while'}
+one_expr = {'not', 'negate', 'isvoid'}
+
+def print_expr(ast):
+    out_file.write(str(ast[0]) + '\n')
+    if ast[1] == 'assign':
+        #p[0] = (p.lineno(1), 'assign', p[1], p[3])
+        out_file.write(ast[1] + '\n')
+        print_identifier(ast[2])
+        print_expr(ast[3])
+#    elif ast[1] == 'dynamic_dispatch':
+#    elif ast[1] == 'static_dispatch':
+#    elif ast[1] == 'self_dispatch':
+#    elif ast[1] == 'if':
+#    elif ast[1] == 'block':
+#    elif ast[1] == 'let':
+#    elif ast[1] == 'case':
+    elif ast[1] == 'new':
+        #'expr : NEW type'
+        #p[0] = (p.lineno(1), 'new', p[2])
+        out_file.write(ast[1] + '\n')
+        print_identifier(ast[2])
+    elif ast[1] in one_expr:
+        # p[0] = (p.lineno(1), 'isvoid', p[1])
+        out_file.write(ast[1] + '\n')
+        print_expr(ast[2])
+    elif ast[1] in two_exprs:
+        # p[0] = (p.lineno(1), 'minus', p[1], p[3])
+        out_file.write(ast[1] + '\n')
+        print_expr(ast[2])
+        print_expr(ast[3])
+    elif ast[1] == 'integer':
+        # p[0] = (p.lineno(1), 'integer', p[1])
+        out_file.write(ast[1] + '\n')
+        out_file.write(str(ast[2]) + '\n')
+    elif ast[1] == 'string':
+        # p[0] = (p.lineno(1), 'string', p[1])
+        out_file.write(ast[1] + '\n')
+        out_file.write(ast[2] + '\n')
+    elif ast[1] == 'identifier':
+        # p[0] = (p.lineno(1), 'identifier', p[1])
+        out_file.write(ast[1] + '\n')
+        out_file.write(ast[2] + '\n')
+    elif ast[1] in {'true', 'false'}:
+        # Since t/f are the names of these expressions,
+        out_file.write(ast[1] + '\n')
+    elif len(ast) == 2:
+        #Should only get here if expr was parsed from a paren expr
+        print_expr(ast[1])
+    else:
+        print("Unimplemented expr: " + ast[1])
+        out_file.write("Unimplemented expr: " + ast[1] + '\n')
 
 def print_feature(ast):
-    #TODO: support methods
-    '''feature : identifier COLON type LARROW exp
-               | identifier COLON type'''
-    if len(ast) == 5:
-        out_file.write("attribute_init\n")
+    out_file.write(ast[1] + '\n')
+    if ast[1] == 'attribute_no_init':
+        # p[0] = (p.lineno(1), 'attribute_no_init', p[1], p[3])
         print_identifier(ast[2])
         print_identifier(ast[3])
-        print_exp(ast[5])
-    else:
-        out_file.write("attribute_no_init\n")
+    elif ast[1] == 'attribute_init':
+        # p[0] = (p.lineno(1), 'attribute_init', p[1], p[3], p[5])
         print_identifier(ast[2])
         print_identifier(ast[3])
+        print_expr(ast[4])
+    elif ast[1] == 'method':
+        if len(ast) == 6:
+            # p[0] = ((p[1])[0], 'method', p[1], p[3], p[6], p[8])
+            #         line     ,         , id  , flst, type, expr
+            print_identifier(ast[2])
+            print_list(ast[3], print_formal)
+            print_identifier(ast[4])
+            print_expr(ast[5])
+        elif len(ast) == 5:
+            # feature : identifier LPAREN RPAREN COLON type LBRACE expr RBRACE
+            #        line      ,         , id  , type, expr
+            # p[0] = ((p[1])[0], 'method', p[1], p[5], p[7])
+            print_identifier(ast[2])
+            print_identifier(ast[3])
+            print_expr(ast[4])
+
+
+def print_formal(ast):
+    print_identifier(ast[1])
+    print_identifier(ast[2])
 
 def print_program(ast):
+    #program : classlist
     print_list(ast,print_class)
 
 def print_identifier(ast):
+    #identifier : (line, id)
     out_file.write(str(ast[0]) + '\n')
     out_file.write(ast[1] + '\n')
 
