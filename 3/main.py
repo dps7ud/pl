@@ -2,6 +2,18 @@ import sys
 from lex import LexToken
 import yacc as yacc
 
+
+#######
+#setup#
+#######
+
+# Open file and read all lines, deleting newline
+token_file = open(sys.argv[1], 'r')
+token_lines = token_file.readlines()
+token_file.close()
+token_lines = [a.replace('\n','').replace('\r','') for a in token_lines]
+
+# List of token tuples
 pa2_tokens = []
 
 class Pa2Lexer(object):
@@ -23,23 +35,22 @@ class Pa2Lexer(object):
 def read_token():
     """Used to build token list from input file"""
     global token_lines
-    result = token_lines[0].replace('\n','').replace('\r','')
+    result = token_lines[0]#.replace('\n','').replace('\r','')
     token_lines = token_lines[1:]
     return result
 
-token_file = open(sys.argv[1], 'r')
-token_lines = token_file.readlines()
-token_file.close()
 
+# Last token and last linono in case we read EOF mid-parse
 # This feels dirty
 last_line = 0
 last_token = 'EOF'
 
+#Copy everything from file to token list
 while token_lines:
-    """Copy everything from file to token list"""
     line_number = read_token()
     token_type = read_token()
     token_lexeme = token_type
+    # These have associated lexemes
     if token_type in {'type', 'integer', 'string', 'identifier'}:
         token_lexeme = read_token()
     else:
@@ -50,6 +61,9 @@ while token_lines:
 
 pa2lexer = Pa2Lexer()
 
+###################
+#Parser definition#
+###################
 
 tokens = (
     'AT',
@@ -108,6 +122,8 @@ precedence = (
         ('left', 'DOT')
 )
 
+#program/class/feature/formal rules#
+
 def p_program_classlist(p):
     'program : classlist'
     p[0] = p[1]
@@ -164,6 +180,7 @@ def p_formal_only(p):
     'formal : identifier COLON type'
     p[0] = ((p[1])[0], p[1], p[3])
 
+#type + id$
 def p_type(p):
     'type : TYPE'
     p[0] = (p.lineno(1), p[1])
@@ -173,8 +190,6 @@ def p_identifier(p):
     p[0] = (p.lineno(1), p[1])
 
 #Expressions#
-#############
-
 def p_expr_assign(p):
     'expr : identifier LARROW expr'
     p[0] = ((p[1])[0], 'assign', p[1], p[3])
@@ -191,10 +206,6 @@ def p_expr_self_dispatch(p):
     'expr : identifier LPAREN arglist RPAREN'
     p[0] = ((p[1])[0], 'self_dispatch', p[1], p[3])
 
-""" We allow lists of expressions to be:
-    arglist: nullable
-    exprlist: non-nullable"""
-
 def p_exprlist_one(p):
     'exprlist : expr SEMI'
     p[0] = [p[1]]
@@ -203,16 +214,16 @@ def p_exprlist_many(p):
     'exprlist : expr SEMI exprlist'
     p[0] = [p[1]] + p[3]
 
-def p_Barglist_many(p):
-    'Barglist : COMMA expr Barglist'
+def p_B_many(p):
+    'B : COMMA expr B'
     p[0] = [p[2]] + p[3]
 
-def p_Barglist_none(p):
-    'Barglist : '
+def p_B_none(p):
+    'B : '
     p[0] = []
 
 def p_arglist_one(p):
-    'arglist : expr Barglist'
+    'arglist : expr B'
     p[0] = [p[1]] + p[2]
 
 def p_arglist_none(p):
@@ -319,18 +330,36 @@ def p_binding_init(p):
     'binding : identifier COLON type LARROW expr'
     p[0] = ( (p[1])[0], 'let_binding_init', p[1], p[3], p[5])
 
+def p_expr_switch(p):
+    'expr : CASE expr OF caselist ESAC'
+    p[0] = (p.lineno(1), 'case', p[2], p[4])
+
+def p_caselist_one(p):
+    'caselist : case SEMI'
+    p[0] = [p[1]]
+
+def p_caselist_many(p):
+    'caselist : case SEMI caselist'
+    p[0] = [p[1]] + p[3]
+
+def p_case_only(p):
+    'case : identifier COLON type RARROW expr'
+    p[0] = ( (p[1])[0], p[1], p[3], p[5])
+
 def p_error(p):
     if p:
-        print "ERROR+: " + str(p.lineno) + ": Parser: parse error near " + str(p.type)
+        print "ERROR: " + str(p.lineno) + ": Parser: syntax error near " + str(p.type)
         exit(1)
     else:
-        print "ERROR+: " + str(last_line) + ": Parser: parse error near " + str(last_token)
+        print "ERROR: " + str(last_line) + ": Parser: syntax error near " + str(last_token)
         exit(1)
 
-###Output###
-############
+##########################
+#Output and serialization#
+##########################
 
 def print_list(ast, print_element_func):
+    # Print a list of whatever is passed
     out_file.write(str(len(ast)) + '\n')
     for elem in ast:
         print_element_func(elem)
@@ -347,13 +376,6 @@ def print_class(ast):
         print_identifier(ast[2])
         out_file.write("no_inherits\n")
         print_list(ast[3], print_feature)
-    else:
-        print("Error: not a class")
-        print(ast[1])
-        exit(0)
-
-two_exprs = {'plus', 'times', 'divide', 'minus', 'lt', 'le', 'eq', 'while'}
-one_expr = {'not', 'negate', 'isvoid'}
 
 def print_binding(ast):
     out_file.write(ast[1] + '\n')
@@ -369,7 +391,11 @@ def print_binding(ast):
         print_identifier(ast[3])
         print_expr(ast[4])
 
+two_exprs = {'plus', 'times', 'divide', 'minus', 'lt', 'le', 'eq', 'while'}
+one_expr = {'not', 'negate', 'isvoid'}
+
 def print_expr(ast):
+    # For all exprs print name and lineno
     out_file.write(str(ast[0]) + '\n')
     out_file.write(ast[1] + '\n')
     if ast[1] == 'assign':
@@ -377,20 +403,20 @@ def print_expr(ast):
         print_identifier(ast[2])
         print_expr(ast[3])
     elif ast[1] == 'dynamic_dispatch':
-        # 'expr : expr DOT identifier LPAREN arglist RPAREN'
+        #                                        expr,   id, arglist
         # p[0] = ( (p[1])[0],'dynamic_dispatch', p[1], p[3], p[5])
         print_expr(ast[2])
         print_identifier(ast[3])
         print_list(ast[4], print_expr)
     elif ast[1] == 'static_dispatch':
-        #                                        expr type ,   id, arglist
+        #                                        expr, type,   id, arglist
         # p[0] = ( (p[1])[0], 'static_dispatch', p[1], p[3], p[5], [7])
         print_expr(ast[2])
         print_identifier(ast[3])
         print_identifier(ast[4])
         print_list(ast[5], print_expr)
     elif ast[1] == 'self_dispatch':
-        # 'expr : identifier LPAREN arglist RPAREN'
+        # 'expr :                               id, arglist
         # p[0] = ((p[1])[0], 'self_dispatch', p[1], p[3])
         print_identifier(ast[2])
         print_list(ast[3], print_expr)
@@ -404,43 +430,45 @@ def print_expr(ast):
         #     out_file.write(ast[1] + '\n')
         print_list(ast[2], print_expr)
     elif ast[1] == 'let':
-        # 'expr                     ,bindinglist, expr'
+        # expr                      bindinglist, expr
         # p[0] = (p.lineno(1), 'let', p[2], p[4])
         print_list(ast[2], print_binding)
         print_expr(ast[3])
-#    elif ast[1] == 'case':
+    elif ast[1] == 'case':
+        #                              expr, caselist
+        # p[0] = (p.lineno(1), 'case', p[2], p[4])
+        print_expr(ast[2])
+        print_list(ast[3], print_case)
     elif ast[1] == 'new':
-        #'expr : NEW type'
+        #                           type
         #p[0] = (p.lineno(1), 'new', p[2])
-        #out_file.write(ast[1] + '\n')
         print_identifier(ast[2])
     elif ast[1] in one_expr:
         # p[0] = (p.lineno(1), 'isvoid', p[1])
-        #out_file.write(ast[1] + '\n')
         print_expr(ast[2])
     elif ast[1] in two_exprs:
         # p[0] = (p.lineno(1), 'minus', p[1], p[3])
-        #out_file.write(ast[1] + '\n')
         print_expr(ast[2])
         print_expr(ast[3])
     elif ast[1] == 'integer':
         # p[0] = (p.lineno(1), 'integer', p[1])
-        #out_file.write(ast[1] + '\n')
         out_file.write(str(ast[2]) + '\n')
     elif ast[1] == 'string':
         # p[0] = (p.lineno(1), 'string', p[1])
-        #out_file.write(ast[1] + '\n')
         out_file.write(ast[2] + '\n')
     elif ast[1] == 'identifier':
         # p[0] = (p.lineno(1), 'identifier', p[1])
-        #out_file.write(ast[1] + '\n')
         print_identifier(ast[2])
     elif ast[1] in {'true', 'false'}:
         # Since t/f are the names of these expressions,
         pass
-    else:
-        print("Unimplemented expr: " + ast[1])
-        out_file.write("Unimplemented expr: " + ast[1] + '\n')
+
+def print_case(ast):
+    #                       id, type, expr
+    # p[0] = ( (p[1])[0], p[1], p[2], p[3])
+    print_identifier(ast[1])
+    print_identifier(ast[2])
+    print_expr(ast[3])
 
 def print_feature(ast):
     out_file.write(ast[1] + '\n')
@@ -454,15 +482,15 @@ def print_feature(ast):
         print_identifier(ast[3])
         print_expr(ast[4])
     elif ast[1] == 'method':
-        if len(ast) == 6:
-            # p[0] = ((p[1])[0], 'method', p[1], p[3], p[6], p[8])
-            #         line     ,         , id  , flst, type, expr
-            print_identifier(ast[2])
-            print_list(ast[3], print_formal)
-            print_identifier(ast[4])
-            print_expr(ast[5])
+        # p[0] = ((p[1])[0], 'method', p[1], p[3], p[6], p[8])
+        #                              id  , flst, type, expr
+        print_identifier(ast[2])
+        print_list(ast[3], print_formal)
+        print_identifier(ast[4])
+        print_expr(ast[5])
 
 def print_formal(ast):
+    #formal : id, type
     print_identifier(ast[1])
     print_identifier(ast[2])
 
@@ -475,9 +503,10 @@ def print_identifier(ast):
     out_file.write(str(ast[0]) + '\n')
     out_file.write(ast[1] + '\n')
 
-# Build parser from rules
+# Build parser from defn, using dummy lexer
 parser = yacc.yacc()
 ast = yacc.parse(lexer=pa2lexer)
+# Output
 out_file = open(sys.argv[1][:-4] + "-ast", 'w')
 print_program(ast)
 out_file.close()

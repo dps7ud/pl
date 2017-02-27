@@ -1,0 +1,15 @@
+Cool syntax and precedence:
+CRM
+
+ply:
+ply documentation
+
+getting started:
+getting started with python and ply Weimer video
+
+Output spec:
+assignment page
+
+learning that vim uses '\n' to refer to newlines when searching but to the null
+character when replacing:
+http://unix.stackexchange.com/questions/91484/carriage-return-vs-newline-in-vim
