@@ -31,6 +31,10 @@ token_file = open(sys.argv[1], 'r')
 token_lines = token_file.readlines()
 token_file.close()
 
+# This feels dirty
+last_line = 0
+last_token = 'EOF'
+
 while token_lines:
     """Copy everything from file to token list"""
     line_number = read_token()
@@ -41,6 +45,8 @@ while token_lines:
     else:
         token_type = token_type
     pa2_tokens.append( (line_number, token_type.upper(), token_lexeme) )
+    last_line = line_number
+    last_token = token_type
 
 pa2lexer = Pa2Lexer()
 
@@ -198,12 +204,16 @@ def p_exprlist_many(p):
     'exprlist : expr SEMI exprlist'
     p[0] = [p[1]] + p[3]
 
-def p_arglist_many(p):
-    'arglist : COMMA expr arglist'
+def p_Barglist_many(p):
+    'Barglist : COMMA expr Barglist'
     p[0] = [p[2]] + p[3]
 
+def p_Barglist_none(p):
+    'Barglist : '
+    p[0] = []
+
 def p_arglist_one(p):
-    'arglist : expr arglist'
+    'arglist : expr Barglist'
     p[0] = [p[1]] + p[2]
 
 def p_arglist_none(p):
@@ -290,12 +300,33 @@ def p_expr_false(p):
     'expr : FALSE'
     p[0] = (p.lineno(1), 'false')
 
+def p_expr_let(p):
+    'expr : LET bindinglist IN expr'
+    p[0] = (p.lineno(1), 'let', p[2], p[4])
+
+def p_bindinglist_one(p):
+    'bindinglist : binding'
+    p[0] = [p[1]]
+
+def p_bindinglist_many(p):
+    'bindinglist : binding COMMA bindinglist'
+    p[0] = [p[1]] + p[3]
+
+def p_binding_no_init(p):
+    'binding : identifier COLON type'
+    p[0] = ( (p[1])[0], 'let_binding_no_init', p[1], p[3])
+
+def p_binding_init(p):
+    'binding : identifier COLON type LARROW expr'
+    p[0] = ( (p[1])[0], 'let_binding_init', p[1], p[3], p[5])
+
 def p_error(p):
     if p:
-        print "ERROR+: ", p.lineno, ": Parser: parse error near", p.type
+        print "ERROR+: " + str(p.lineno) + ": Parser: parse error near " + str(p.type)
         exit(1)
     else:
-        print "Syntax error at EOF" #EOF lineno
+        print "ERROR+: " + str(last_line) + ": Parser: parse error near " + str(last_token)
+        exit(1)
 
 ###Output###
 ############
@@ -325,8 +356,21 @@ def print_class(ast):
 two_exprs = {'plus', 'times', 'divide', 'minus', 'lt', 'le', 'eq', 'while'}
 one_expr = {'not', 'negate', 'isvoid'}
 
+def print_binding(ast):
+    out_file.write(ast[1] + '\n')
+    if ast[1] == 'let_binding_no_init':
+        #                                              id, type
+        # p[0] = ( (p[1])[0], 'let_binding_no_init', p[1], p[3])
+        print_identifier(ast[2])
+        print_identifier(ast[3])
+    elif ast[1] == 'let_binding_init':
+        #                                           id, type, expr
+        # p[0] = ( (p[1])[0], 'let_binding_init', p[1], p[3], p[5])
+        print_identifier(ast[2])
+        print_identifier(ast[3])
+        print_expr(ast[4])
+
 def print_expr(ast):
-    print(ast)
     out_file.write(str(ast[0]) + '\n')
     out_file.write(ast[1] + '\n')
     if ast[1] == 'assign':
@@ -360,7 +404,11 @@ def print_expr(ast):
     elif ast[1] == 'block':
         #     out_file.write(ast[1] + '\n')
         print_list(ast[2], print_expr)
-#    elif ast[1] == 'let':
+    elif ast[1] == 'let':
+        # 'expr                     ,bindinglist, expr'
+        # p[0] = (p.lineno(1), 'let', p[2], p[4])
+        print_list(ast[2], print_binding)
+        print_expr(ast[3])
 #    elif ast[1] == 'case':
     elif ast[1] == 'new':
         #'expr : NEW type'
@@ -389,12 +437,8 @@ def print_expr(ast):
         #out_file.write(ast[1] + '\n')
         print_identifier(ast[2])
     elif ast[1] in {'true', 'false'}:
-        pass
         # Since t/f are the names of these expressions,
-    #    out_file.write(ast[1] + '\n')
-#    elif len(ast) == 2:
-#        #Should only get here if expr was parsed from a paren expr
-#        print_expr(ast[1])
+        pass
     else:
         print("Unimplemented expr: " + ast[1])
         out_file.write("Unimplemented expr: " + ast[1] + '\n')
@@ -419,7 +463,6 @@ def print_feature(ast):
             print_identifier(ast[4])
             print_expr(ast[5])
         elif len(ast) == 5:
-            # feature : identifier LPAREN RPAREN COLON type LBRACE expr RBRACE
             #        line      ,         , id  , type, expr
             # p[0] = ((p[1])[0], 'method', p[1], p[5], p[7])
             print_identifier(ast[2])
@@ -439,11 +482,9 @@ def print_identifier(ast):
     out_file.write(str(ast[0]) + '\n')
     out_file.write(ast[1] + '\n')
 
-
 # Build parser from rules
 parser = yacc.yacc()
 ast = yacc.parse(lexer=pa2lexer)
-
 out_file = open(sys.argv[1][:-4] + "-ast", 'w')
 print_program(ast)
 out_file.close()

@@ -8,6 +8,6 @@ class Main{
     f : Int <- (if 4 then isvoid 4 else ~("expr") fi);
     g : SomeType <- main(so, many, args, like, 7, if somany then maybe else fewer fi);
     h : SomeType <- {4; 3;};
-    i : Othertype <- x.method_name(so, many, args, like, 7, if somany then maybe else fewer fi);
+    i : Othertype <- x.method_name(,so, many, args, like, 7, if somany then maybe else fewer fi);
     j : K <- var@Superclass.method_name();
 };
