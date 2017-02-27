@@ -23,7 +23,7 @@ class Pa2Lexer(object):
 def read_token():
     """Used to build token list from input file"""
     global token_lines
-    result = token_lines[0].strip()
+    result = token_lines[0].replace('\n','').replace('\r','')
     token_lines = token_lines[1:]
     return result
 
@@ -138,11 +138,11 @@ def p_featurelist_some(p):
 
 def p_feature_attributenoinit(p):
     'feature : identifier COLON type'
-    p[0] = (p.lineno(1), 'attribute_no_init', p[1], p[3])
+    p[0] = ((p[1])[0], 'attribute_no_init', p[1], p[3])
 
 def p_feature_attributeinit(p):
     'feature : identifier COLON type LARROW expr'
-    p[0] = (p.lineno(1), 'attribute_init', p[1], p[3], p[5])
+    p[0] = ((p[1])[0], 'attribute_init', p[1], p[3], p[5])
 
 def p_feature_method_args(p):
     'feature : identifier LPAREN formallist RPAREN COLON type LBRACE expr RBRACE'
@@ -150,7 +150,7 @@ def p_feature_method_args(p):
 
 def p_feature_method_noargs(p):
     'feature : identifier LPAREN RPAREN COLON type LBRACE expr RBRACE'
-    p[0] = ((p[1])[0], 'method', p[1], p[5], p[7])
+    p[0] = ((p[1])[0], 'method', p[1], [], p[5], p[7])
 
 def p_formallist_one(p):
     'formallist : formal'
@@ -177,8 +177,7 @@ def p_identifier(p):
 
 def p_expr_assign(p):
     'expr : identifier LARROW expr'
-    #p[0] = ((p[1])[0], 'assign', p[1], p[3])
-    p[0] = (p.lineno(1), 'assign', p[1], p[3])
+    p[0] = ((p[1])[0], 'assign', p[1], p[3])
 
 def p_expr_dynamic_dispatch(p):
     'expr : expr DOT identifier LPAREN arglist RPAREN'
@@ -462,12 +461,6 @@ def print_feature(ast):
             print_list(ast[3], print_formal)
             print_identifier(ast[4])
             print_expr(ast[5])
-        elif len(ast) == 5:
-            #        line      ,         , id  , type, expr
-            # p[0] = ((p[1])[0], 'method', p[1], p[5], p[7])
-            print_identifier(ast[2])
-            print_identifier(ast[3])
-            print_expr(ast[4])
 
 def print_formal(ast):
     print_identifier(ast[1])
