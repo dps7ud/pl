@@ -1,0 +1,3 @@
+class NotMain{
+    main() : Int{};
+};
