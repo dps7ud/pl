@@ -39,8 +39,7 @@ function to_pairs(array){
     for (var ii = 0; ii < array.length; ii+=2){
         if (array[ii+1] !== undefined){
             pairs.push ([array[ii], array[ii+1]]);
-        } /*else {
-        }*/
+        }
     }
     return pairs;
 }
@@ -56,9 +55,6 @@ function topo(tasks, pairs, ans) {
         todo.sort();
         var taken = todo[0];
         tasks.splice(tasks.indexOf(taken), 1);
-//        pairs.filter( (item) => {
-//            return item[1] !== taken;
-//        });
         var new_pairs = pairs.filter( (item)=> {
             return item[1] !== taken;
         })
@@ -71,29 +67,3 @@ function topo(tasks, pairs, ans) {
         return 0;
     }
 }
-
-//tasks = Array.from(new Set(lines)); //pairs = to_pairs(lines)
-//ans = []
-
-/*
-def solve(tasks, pairs, ans):
-    tasks or (print(*ans, sep='\n') or exit())
-    temp = sorted(list(tasks - set([x[0] for x in pairs])))
-    solve(tasks - set([temp[0]]), [x for x in pairs if x[1] != temp[0]], 
-        ans + [temp[0]] ) if temp else print("cycle")
-*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

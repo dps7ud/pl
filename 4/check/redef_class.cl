@@ -4,5 +4,7 @@ class Main inherits IO{
     };
 };
 
-class A{};
-class A{};
+class A inherits B{};
+class B inherits A{};
+--class A inherits B{};
+--class A{};

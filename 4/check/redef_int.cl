@@ -3,3 +3,4 @@ class Main{
 };
 
 class Int{};
+--class A inherits Bool{};

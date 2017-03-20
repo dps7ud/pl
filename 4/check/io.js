@@ -1,5 +1,11 @@
 var fs = require('fs');
-var toposort = require("./toposort.js");
+var ts = require("./toposort.js");
+
+function put_error(line, message){
+    var str = "ERROR: " + line + ": Type-Check: " + message;
+    console.log(str);
+    process.exit(1);
+};
 
 /* Process input*/
 function read_list(lines, read_func){
@@ -165,16 +171,125 @@ function read_exp(lines){
 }
 
 function setup(){
-    var classes = []
+    var classes = [];
     var class_names = ["Bool", "IO", "Int", "Object", "String"];
     for (var ii = 0; ii < class_names.length; ii++){
         var cool_class = {};
         cool_class.name = class_names[ii];
         cool_class.inherits = false;
         cool_class.features = [];
+
         cool_class.toString = function(){
-            return '\n' + this.name.toString();
+            var str = this.name.toString();
+            for (var ii = 0; ii < this.features.length; ii++){
+                str += '\n';
+                str += this.features[ii].toString();
+            }
+            return str;
         };
+    }
+/*
+    class_obj.features = read_list(lines, read_feature);
+
+    case "method";:
+        feature.name = read_id(lines);
+        feature.formals = read_list(lines, read_formal);
+        feature.ret_type = read_id(lines);
+        feature.body = read_exp(lines);
+    var formal = {};
+    formal.name = read_id(lines);
+    formal.f_type = read_id(lines);
+    return formal;
+*/
+        switch(cool_class.name){
+            case "IO":
+                out_string = {};
+                out_string.name = "out_string";
+                formal = {};
+                formal.name = "x";
+                formal.f_type = "String";
+                out_string.formals = [formal];
+                out_string.ret_type = "SELF_TYPE";
+                out_string.kind = "method";
+
+                out_int = {};
+                out_int.name = "out_int";
+                formal = {};
+                formal.name = "x";
+                formal.f_type = "Int";
+
+                out_int.formals = [formal];
+                out_int.ret_type = "SELF_TYPE";
+                out_int.kind = "method";
+
+                in_string = {};
+                in_string.name = "in_string";
+                in_string.formals = [];
+                in_string.ret_type = "String";
+                in_string.kind = "method";
+
+                in_int = {};
+                in_int.name = "in_int";
+                in_int.formals = [];
+                in_int.ret_type = "Int";
+                in_int.kind = "method";
+
+                cool_class.features = [out_string, out_int, in_string, in_int];
+                break;
+            case "Object":
+                abort = {};
+                abort.name = "abort";
+                abort.formals = [];
+                abort.ret_type = "Object";
+                abort.kind = "method";
+
+                type_name = {};
+                type_name.name = "type_name";
+                type_name.formals = [];
+                type_name.ret_type = "String";
+                type_name.kind = "method";
+
+                copy = {};
+                copy.name = "copy";
+                copy.formals = [];
+                copy.ret_type = "SELF_TYPE";
+                copy.kind = "method";
+                cool_class.features = [abort, type_name, copy];
+                break;
+            case "String":
+                length = {}
+                length.name = "length";
+                length.formals = [];
+                length.ret_type = "Int";
+                length.kind = "method";
+
+                concat = {}
+                concat.name = "concat";
+                formal = {};
+                formal.name = "s";
+                formal.f_type = "String";
+                concat.formals = [formal];
+                concat.ret_type = "String";
+                concat.kind = "method";
+
+                substr = {}
+                substr.name = "substr";
+
+                formal = {};
+                formal.name = "i";
+                formal.f_type = "Int";
+                substr.formals = [formal];
+                formal = {};
+                formal.name = "l";
+                formal.f_type = "Int";
+                substr.formals.push(formal);
+
+                substr.ret_type = "String";
+                concat.kind = "method";
+                cool_class.features = [length, concat, substr];
+                break;
+            default:
+                break;
         classes.push(cool_class);
     }
     return classes;
@@ -206,15 +321,18 @@ function out_class_map(classes){
     return ret;
 }
 
-var base = setup();
-var object_class = base[3];
+var base;
+var object_class;
 
 function check_hierarchy(classes){
-    //Check that no classes are redefined
     var parent_list = [];
     var s = new Set();
+    /* This loop checks that no class is defined twice and constructs the
+       list detailing parent-child pairs for later use
+    */
     for (var ii = 0; ii < classes.length; ii++){
         if ( s.has(classes[ii].name.toString()) ){
+            //TODO? better error message, name.line undefined for base class
             console.log("ERROR: " + classes[ii].name.line + ": Type-Check: Class "
                     + classes[ii].name.toString() + " redefined.");
             process.exit(1);
@@ -228,8 +346,62 @@ function check_hierarchy(classes){
         }
         parent_list.push(classes[ii]);
     }
+    pairs = ts.to_pairs(parent_list);
+    subs = ts.get_ith(pairs, 1);
+    supers = ts.get_ith(pairs, 0);
     var cant_inherit = new Set(["Bool", "Int", "String"]);
-    var cant_define = new Set(["Bool", "IO", "Int", "Object", "String"]);
+    console.log(supers);
+    for (var ii = 0; ii < supers.length; ii++){
+        // Checks for undefined superclass
+        if (supers[ii].name === undefined){
+            var find = classes.filter(function(item){
+                return item.name.toString() === supers[ii].id.toString();
+            });
+            if (find.length > 0) {
+                supers[ii] = find[0];
+            } else {
+                console.log("ERROR: " + subs[ii].inherits.line + ": Type-Check: Class " 
+                        + subs[ii].name.toString()
+                        + " inherits from unknown class " + supers[ii].id.toString() );
+                process.exit(1);
+            }
+        }
+        // Checks for inherit from protected class
+        if (cant_inherit.has(supers[ii].name.toString())){
+            console.log("ERROR: " + subs[ii].inherits.line + ": Type-Check: Class "
+                    + subs[ii].name.toString() + " inherits from " + supers[ii].name.toString());
+            process.exit(1);
+        }
+    }
+    var names = parent_list.map(function(item){
+        // God, I hate javascript
+        if (item.name !== undefined)
+            return item.name.toString();
+        else
+            return item.id;
+    });
+    if( !ts.toposort(Array.from(new Set(names)), ts.to_pairs(names), [])){
+        //TODO? better error, get cycle from ts.topo
+        console.log("ERROR: 0: Type-Check: Inheritance cycle: ");
+        process.exit(1);
+    }
+
+    function get_ancestry(class_obj){
+        var ancestry = [class_obj];
+        var has_more = true;
+        while (has_more){
+            var index = -1;
+            for(var ii = 0; ii < subs.length; ii++){
+                if (subs[ii].name.toString() === class_obj.name.toString()){
+                    index = ii;
+                    break;
+                }
+            }
+            class_obj = supers[ii];
+            ancestry.push(class_obj);
+            has_more = (index !== -1)
+        }
+    }
 };
 
 function run(){
@@ -245,6 +417,9 @@ function run(){
         }
         var lines = data.split("\n");
         var ast = read_program(lines);
+        //If there's such a thing as idiomatic javascript, this isn't it
+        base = setup();
+        object_class = base[3];
         ast.classes = ast.classes.concat(base);
         ast.classes.sort(function(a, b){
             if(a.name.toString() < b.name.toString()) return -1;
@@ -252,10 +427,8 @@ function run(){
             return 0;
         });
         check_hierarchy(ast.classes);
-//        out_class_map(ast.classes);
-    fs.writeFile(in_file.substr(0, in_file.lastIndexOf('.')) + '.cl-type'
+        fs.writeFile(in_file.substr(0, in_file.lastIndexOf('.')) + '.cl-type'
             , out_class_map(ast.classes));
     });
 }
 run()
-//exports.su = setup;

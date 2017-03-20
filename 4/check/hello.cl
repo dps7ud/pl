@@ -6,3 +6,6 @@ class Main inherits IO{
     a : Int <- 4;
     b : String;
 };
+
+class B inherits A{};
+class A{};

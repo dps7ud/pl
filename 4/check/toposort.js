@@ -26,13 +26,14 @@ function to_pairs(array){
 }
 
 function topo(tasks, pairs, ans) {
+//    console.log(tasks, pairs, ans);
     if(tasks.length > 0){
         var prereqs = ith(pairs,0);
         var todo = tasks.filter( (item) => {
             var b = !prereqs.includes(item);
             return b
         })
-        if (todo.length <= 0){ console.log("cycle"); return 0;}
+        if (todo.length <= 0){ return false;}
         todo.sort();
         var taken = todo[0];
         tasks.splice(tasks.indexOf(taken), 1);
@@ -41,12 +42,8 @@ function topo(tasks, pairs, ans) {
         })
         ans.push(taken)
         return topo(tasks, new_pairs, ans);
-    } else {
-        for (var ii = 0; ii < ans.length; ii++){
-            console.log(ans[ii]);
-        } 
-        return 0;
-    }
+    } else {return true;}
 }
 exports.toposort = topo;
 exports.to_pairs = to_pairs;
+exports.get_ith= ith;
