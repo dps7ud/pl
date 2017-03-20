@@ -19,7 +19,7 @@ The code has been golfed to achieve a (nearly) minimal number of lines. We will
     i. [x.replace('\n','') for x in sys.stdin.readlines()]
         is the list of input lines with newline characters removed.
         Note that this leaves carriage return characters intact, allowing us to
-        to properly handle training \cr characters.
+        to properly handle trailing \cr characters.
 
     ii. iter(i)
         is an iterator object over the list i.
