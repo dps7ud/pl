@@ -187,7 +187,6 @@ function setup(){
             }
             return str;
         };
-    }
 /*
     class_obj.features = read_list(lines, read_feature);
 
@@ -285,11 +284,12 @@ function setup(){
                 substr.formals.push(formal);
 
                 substr.ret_type = "String";
-                concat.kind = "method";
+                substr.kind = "method";
                 cool_class.features = [length, concat, substr];
                 break;
             default:
                 break;
+        }
         classes.push(cool_class);
     }
     return classes;
@@ -338,7 +338,7 @@ function check_hierarchy(classes){
             process.exit(1);
         }
         s.add(classes[ii].name.toString());
-        if (classes[ii].name === "Object") continue;
+        if (classes[ii].name.toString() === "Object") continue;
         if (classes[ii].inherits){
             parent_list.push(classes[ii].inherits);
         } else {
@@ -350,7 +350,6 @@ function check_hierarchy(classes){
     subs = ts.get_ith(pairs, 1);
     supers = ts.get_ith(pairs, 0);
     var cant_inherit = new Set(["Bool", "Int", "String"]);
-    console.log(supers);
     for (var ii = 0; ii < supers.length; ii++){
         // Checks for undefined superclass
         if (supers[ii].name === undefined){
