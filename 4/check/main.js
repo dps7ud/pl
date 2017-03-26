@@ -2,13 +2,16 @@ var fs = require('fs');
 var ts = require("./toposort.js");
 var rf = require("./read_funcs.js");
 
+// Puts error message to stdout and ends program
 function put_error(line, message){
     var str = "ERROR: " + line + ": Type-Check: " + message;
     console.log(str);
     process.exit(1);
 };
 
-/* Process input*/
+// Construct and return an array of built-in classes
+// Probably should have just written the whole thing in JSON
+// TODO: hardcode built in classes
 function setup(){
     var classes = [];
     var class_names = ["Bool", "IO", "Int", "Object", "String"];
@@ -26,35 +29,35 @@ function setup(){
             }
             return str;
         };
-        switch(cool_class.name){
+        switch(cool_class.name.id){
             case "IO":
                 out_string = {};
                 out_string.name = { line : -1, id: "out_string"
                     , toString: function(){return this.id.toString();} }
-                formal = {name:"x", f_type: "String"};
+                formal = {name:{line:'-1',id:"x"}, f_type: {line:'-1',id:"String"}};
                 out_string.formals = [formal];
-                out_string.ret_type = "SELF_TYPE";
+                out_string.ret_type = {line: "-1",id:"SELF_TYPE"};
                 out_string.kind = "method";
 
                 out_int = {};
                 out_int.name = { line: -1, id: "out_int", toString: function(){return this.id}}
-                formal = {name: "x", f_type: "Int"};
+                formal = {name: {line:'-1',id:"x"}, f_type: {line:'-1',id:"Int"}};
                 out_int.formals = [formal];
-                out_int.ret_type = "SELF_TYPE";
+                out_int.ret_type = {line: "-1",id:"SELF_TYPE"};
                 out_int.kind = "method";
 
                 in_string = {};
                 in_string.name = { line : -1, id: "in_string"
                     , toString: function(){return this.id.toString();} }
                 in_string.formals = [];
-                in_string.ret_type = "String";
+                in_string.ret_type = {id:"String"};
                 in_string.kind = "method";
 
                 in_int = {};
                 in_int.name = { line : -1, id: "in_int"
                     , toString: function(){return this.id.toString();} }
                 in_int.formals = [];
-                in_int.ret_type = "Int";
+                in_int.ret_type = {line: "-1",id:"Int"};
                 in_int.kind = "method";
 
                 cool_class.features = [out_string, out_int, in_string, in_int];
@@ -63,20 +66,20 @@ function setup(){
                 abort = {};
                 abort.name = { line: -1, id: "abort", toString: function(){return this.id}}
                 abort.formals = [];
-                abort.ret_type = "Object";
+                abort.ret_type = {line: "-1",id:"Object"};
                 abort.kind = "method";
 
                 type_name = {};
                 type_name.name = {line: -1, id: "type_name", toString: function(){return this.id}}
                 type_name.formals = [];
-                type_name.ret_type = "String";
+                type_name.ret_type = {line: "-1",id:"String"};
                 type_name.kind = "method";
 
                 copy = {};
                 copy.name = "copy"; 
                 copy.name = {line: -1, id: "copy", toString: function(){return this.id}}
                 copy.formals = [];
-                copy.ret_type = "SELF_TYPE";
+                copy.ret_type = {line: "-1",id:"SELF_TYPE"};
                 copy.kind = "method";
                 cool_class.features = [abort, type_name, copy];
                 break;
@@ -85,23 +88,23 @@ function setup(){
                 length.name = "length";
                 length.name = {line: -1, id: "length", toString: function(){return this.id}}
                 length.formals = [];
-                length.ret_type = "Int";
+                length.ret_type = {line: "-1",id:"Int"};
                 length.kind = "method";
 
                 concat = {}
                 concat.name = {line: -1, id: "concat", toString: function(){return this.id}}
-                formal = {name: "s", f_type: "String"};
+                formal = {name: {line:'-1',id:"s"}, f_type: {line:'-1',id:"String"}};
                 concat.formals = [formal];
-                concat.ret_type = "String";
+                concat.ret_type = {line: "-1",id:"String"};
                 concat.kind = "method";
 
                 substr = {}
                 substr.name = "substr";
                 substr.name = {line: -1, id: "substr", toString: function(){return this.id}}
-                formal = {name: "i", f_type: "Int"};
-                formal_2 = {name: "l", f_type: "Int"};
+                formal = {name: {line:'-1',id:"i"}, f_type: {line:'-1',id:"Int"}};
+                formal_2 = {name: {line:'-1',id:"l"}, f_type: {line:'-1',id:"Int"}};
                 substr.formals = [formal, formal_2];
-                substr.ret_type = "String";
+                substr.ret_type = {line: "-1",id:"String"};
                 substr.kind = "method";
                 cool_class.features = [length, concat, substr];
                 break;
@@ -113,50 +116,41 @@ function setup(){
     return classes;
 }
 
-function out_feature_list(class_obj, wanted_kind){
-    var str = "\n";
-    var to_add = class_obj.features.filter(function(feature){
-        return feature.kind.startsWith(wanted_kind);
-    });
-    str += to_add.length + '\n';
-    for (var ii = 0; ii < to_add.length; ii++){
-        str += to_add[ii].toString();
-        str += '\n';
-    }
-    return str;
-}
-
-function out_class_map(classes){
-    var ret = "class_map\n";
-    ret += classes.length;
-    ret += "\n";
-    for (var ii = 0; ii < classes.length; ii++){
-        ret += classes[ii].name.id.toString();
-        ret += out_feature_list(classes[ii], "attrib");
-    }
-    ret = ret.replace(/attribute_no_init/g, "no_initializer");
-    ret = ret.replace(/attribute_init/g, "initializer");
-    return ret;
-}
-
-var base;
-var object_class;
-
+/* Checks for the following:
+   - Multiple class definitions
+   - Classes named SELF_TYPE
+   - Inherits unknown
+   - Inherits protected
+   - Inheritance cycle
+   - Main defined
+*/
 function check_hierarchy(classes){
     var parent_list = [];
     var s = new Set();
-    /* This loop checks that no class is defined twice and constructs the
-       list detailing parent-child pairs for later use
+    /* Constructs the list detailing parent-child pairs for later use
+       - checks for redefined classes
+       - checks for SELF_TYPE definition
     */
     for (var ii = 0; ii < classes.length; ii++){
-        if ( s.has(classes[ii].name.id.toString()) ){
-            //TODO? better error message, name.line undefined for base class
-            console.log("ERROR: " + classes[ii].name.line + ": Type-Check: Class "
+        var class_name = classes[ii].name.id.toString();
+        if ( s.has(class_name) ){
+            var line_num = Math.max(...classes.filter( (item) => {
+                return item.name.id.toString() === class_name;
+            }).map( (item) => {
+                return parseInt(item.name.line);
+            }))
+            console.log("ERROR: " + line_num + ": Type-Check: Class "
+
                     + classes[ii].name.id.toString() + " redefined.");
             process.exit(1);
         }
         s.add(classes[ii].name.id.toString());
         if (classes[ii].name.id.toString() === "Object") continue;
+        if (classes[ii].name.id.toString() === "SELF_TYPE") {
+            console.log("ERROR: " + classes[ii].name.line 
+                    + ": Type-Check: Class named SELF_TYPE.")
+            process.exit(1);
+        }
         if (classes[ii].inherits){
             parent_list.push(classes[ii].inherits);
         } else {
@@ -164,9 +158,15 @@ function check_hierarchy(classes){
         }
         parent_list.push(classes[ii]);
     }
-    pairs = ts.to_pairs(parent_list);
-    subs = ts.get_ith(pairs, 1);
-    supers = ts.get_ith(pairs, 0);
+    // Need a Main class
+    if (! s.has("Main")){
+        put_error("0", "class Main not found");
+    }
+    //TODO: Unify checks for Main and SELF_TYPE
+
+    var pairs = ts.to_pairs(parent_list);
+    var subs = ts.get_ith(pairs, 1);
+    var supers = ts.get_ith(pairs, 0);
     var cant_inherit = new Set(["Bool", "Int", "String"]);
     for (var ii = 0; ii < supers.length; ii++){
         // Checks for undefined superclass
@@ -203,9 +203,134 @@ function check_hierarchy(classes){
         console.log("ERROR: 0: Type-Check: Inheritance cycle: ");
         process.exit(1);
     }
+};
 
+/* Checks for the following:
+   - Method with unknown return type
+   - Method with duplicate formal parameter
+   - Method with formal parameter named self
+   - Method with formal parameter of unknown type
+   - Duplicate method definition
+   - Duplicate attribute definition
+   - Attribute named self
+   - Attribute of unknown type
+   - Main.main defined
+   - Main.main with zero parameters
+   - Super redefines attribute
+
+   And constructs class_map string
+*/
+function method_checks(classes){
+    var parent_list = [];
+    for (var ii = 0; ii < classes.length; ii++){
+        if (classes[ii].name.id.toString() === "Object") continue;
+        if (classes[ii].inherits){
+            var find = classes.filter(function(item){
+                return item.name.id.toString() === classes[ii].inherits.id;
+            });
+            parent_list.push(find[0]);
+        } else {
+            parent_list.push(object_class);
+        }
+        parent_list.push(classes[ii]);
+
+        // Check if defines a method twice
+        // Count occurences of method names in class body
+        var counts = {};
+        var methods = classes[ii].features.filter( (item) => {
+            return item.kind === "method";
+        });
+        // While we build our counts, check things for which we don't need inheratence info
+        for (var jj = 0; jj < methods.length; jj++){
+            counts[methods[jj].name.id] = 
+                (counts[methods[jj].name.id] || 0) + 1;
+            // Check return type exits
+            if (methods[jj].ret_type.id !== "SELF_TYPE"
+                    && classes.filter( (item) => {
+                        return item.name.id === methods[jj].ret_type.id;
+                    }).length <= 0){
+                var msg = "class " + classes[ii].name.id + " has method "
+                    + methods[jj].name.id + " with unknown return type "
+                    + methods[jj].ret_type.id;
+                var line_number = methods[jj].ret_type.line;
+                put_error(line_number, msg);
+            }
+            /* Check for 
+               - duplicate parameters
+               - unknown formal type
+               - parameter names *self*
+            */
+            var formal_names = new Set();
+            for (var kk = 0; kk < methods[jj].formals.length; kk++){
+                if (formal_names.has(methods[jj].formals[kk].name.id)){
+                    var msg = "class " + classes[ii].name.id + " has method "
+                        + methods[jj].name.id + " with duplicate formal parameter named "
+                        + methods[jj].formals[kk].name.id;
+                    var line_num = methods[jj].formals[kk].name.line;
+                    put_error(line_num, msg);
+                }
+                formal_names.add(methods[jj].formals[kk].name.id)
+                if (methods[jj].formals[kk].name.id === "self"){
+                    var msg = "class " + classes[ii].name.id + " has method "
+                        + methods[jj].name.id + " with formal parameter named self";
+                    put_error(methods[jj].formals[kk].name.line, msg);
+                }
+                if (classes.filter( (item) => {
+                    return item.name.id === methods[jj].formals[kk].f_type.id;
+                }).length <= 0){
+                    var line_num = methods[jj].formals[kk].f_type.line;
+                    var msg = "class " + classes[ii].name.id + " has method "
+                        + methods[jj].name.id + " with formal parameter of unknown type "
+                        + methods[jj].formals[kk].f_type.id;
+                    put_error(line_num, msg);
+                }
+            }
+        }
+        // get the line number of the second definition
+        // Correct implementation is to get second definition by heirarchy
+        for (var name in counts){
+            if (counts[name] > 1){
+                var line_num = methods.filter( (item) => {
+                    return item.name.id === name;
+                }).map( (item) => {
+                    return item.name.line;
+                })[1];
+                var msg = "class " + classes[ii].name.id + " redefines method " + name;
+                put_error(line_num, msg);
+            }
+        }
+
+        var attributes = classes[ii].features.filter( (item) => {
+            return item.kind !== "method";
+        });
+        // Check for attribute errors
+        for (var jj = 0; jj < attributes.length; jj++){
+            // Check name != self
+            if (attributes[jj].name.id === "self"){
+                var msg = "class " + classes[ii].name.id + " has an attribute named self"
+                var line_num = attributes[jj].name.line;
+                put_error(line_num, msg);
+            }
+            // Check type exists
+            if (attributes[jj].f_type.id !== "SELF_TYPE"
+                    && classes.filter( (item) => {
+                return item.name.id === attributes[jj].f_type.id;
+            }).length <= 0) {
+                var msg = "class " + classes[ii].name.id + " has attribute "
+                    + attributes[jj].name.id + " with unknown type " + attributes[jj].f_type.id;
+                var line_num = attributes[jj].f_type.line;
+                put_error(line_num, msg);
+            }
+        }
+    }
+
+    var pairs = ts.to_pairs(parent_list);
+    var subs = ts.get_ith(pairs, 1);
+    var supers = ts.get_ith(pairs, 0);
+
+    // Construcs an inheritance chain from classes[ii] to Object
     function get_ancestry(class_obj){
-        var ancestry = [];
+        var ancestry = [class_obj];
         while (true){
             var index = -1;
             for(var ii = 0; ii < subs.length; ii++){
@@ -222,14 +347,150 @@ function check_hierarchy(classes){
         }
         return ancestry;
     }
-    for (var ii = 0; ii < classes.length; ii++){
-        var parents_of = get_ancestry(classes[ii]);
+
+    // Holds attributes for classes[ii] at index ii
+    var class_attribs = [];
+    for (var ii = 0; ii < classes.length; ii ++){
+        var parents = get_ancestry(classes[ii]);
+        var methods_at_index = [];
+        var attribs_at_index = [];
+
+        // Build methods and attributes for each class (includeing superclass features)
+        for (var jj = 0; jj < parents.length; jj ++){
+            methods_at_index = methods_at_index.concat( parents[jj].features.filter( (item)=>{
+                return item.kind === "method";
+            }).map( (item) => {
+                item.def = parents[jj].name.id;
+                return item;
+            }));
+            var to_add = parents[jj].features.filter(
+                        (item)=>{return item.kind !== "method";}).map( (item) => {
+                item.def = parents[jj].name.id;
+                return item;
+            });
+            for (var kk = to_add.length-1; kk >= 0; kk--){
+                attribs_at_index.unshift(to_add[kk]);
+            }
+        }
+
+        // Special checks for Main.main
+        if (classes[ii].name.id === "Main"){
+            var main = methods_at_index.filter( (item) => {
+                return item.name.id === "main";
+            });
+            if (main.length < 1){
+                console.log("ERROR: 0: Type-Check: class Main method main not found");
+                process.exit(1);
+            }
+            // Pick most recently defined, check later that all are the same
+            main = main[0];
+            if (main.formals.length > 0){
+                console.log("ERROR: 0: Type-Check: class Main method " 
+                        + "main with 0 parameters not found");
+                process.exit(1);
+            }
+        }
+
+        /*Need to have attribs acquired from superclasses
+           in order to output to class_map in proper order
+        */
+        var only_super_attribs = attribs_at_index.filter( (item) => {
+            return item.def !== classes[ii].name.id;
+        });
+        class_attribs.push(only_super_attribs);
+
+        // Check for method redefinitions using *check_method_redefs*
+        var attrib_counts = {};
+        var method_counts = {};
+        for (var kk = 0; kk < attribs_at_index.length; kk++){
+            attrib_counts[attribs_at_index[kk].name.id] = 
+                (attrib_counts[attribs_at_index[kk].name.id] || 0) + 1;
+        }
+        for (var kk = 0; kk < methods_at_index.length; kk++){
+            method_counts[methods_at_index[kk].name.id] = 
+                (method_counts[methods_at_index[kk].name.id] || 0) + 1;
+        }
+        for (var name in method_counts){
+            if (method_counts[name] > 1) {
+                var to_check = methods_at_index.filter( (item) => {
+                    return item.name.id === name;
+                });
+                check_method_redefs(to_check);
+            }
+        }
+
+        // Checks for redefined attribute
+        for (var name in attrib_counts){
+            if (attrib_counts[name] > 1) {
+                var redef_attrib = attribs_at_index.filter( (item) => {
+                    return item.name.id === name;
+                });
+                var bad_attrib = redef_attrib[redef_attrib.length - 2];
+                var msg = "class " + bad_attrib.def + " redefines attribute "
+                    + bad_attrib.name.id;
+                put_error(bad_attrib.name.line, msg);
+            }
+        }
     }
 
-    
-};
+    // Build class_map string
+    var ret = "class_map\n" + classes.length + '\n';
+    for (var ii = 0; ii < classes.length; ii++){
+        var all_attribs = class_attribs[ii].concat( classes[ii].features.filter( (item) => {
+            return item.kind !== "method";
+        }));
+        ret += classes[ii].name.id.toString() + '\n';
+        ret += out_list(all_attribs);
+    }
+    return ret;
+}
+
+// Build string from list (used for attributes)
+function out_list(list){
+    var str = list.length + '\n';
+    for (var ii = 0; ii < list.length; ii++){
+        str += list[ii].toString() + '\n';
+    }
+    return str;
+}
+
+/* Checks for the following:
+   - Redefines method and changes number of formals
+   - Redefines method and changes return type
+   - Redefines method and changes type of formal
+*/
+function check_method_redefs(method_list){
+    // This function checks for redefinition errors
+    var earliest = method_list[method_list.length - 1];
+    for (var ii = method_list.length - 1; ii >= 0; ii--){
+        // Check number of formals
+        if (method_list[ii].formals.length !== earliest.formals.length){
+            var msg = "class " + method_list[ii].def + " redefines method "
+                + method_list[ii].name.id + " and changes number of formals";
+            put_error(method_list[ii].name.line, msg);
+        }
+        // Check return type
+        if (method_list[ii].ret_type.id !== earliest.ret_type.id){
+            var msg = "class " + method_list[ii].def + " redefines method "
+                + method_list[ii].name.id + " and changes return type (from " 
+                + earliest.ret_type.id + " to " + method_list[ii].ret_type.id + ")";
+            put_error(method_list[ii].ret_type.line, msg);
+        }
+        // Check formal types (already know we have the same number)
+        for (var jj = 0; jj < earliest.formals.length; jj++){
+            if (earliest.formals[jj].f_type.id !== method_list[ii].formals[jj].f_type.id){
+                var line_num = method_list[ii].formals[jj].f_type.line;
+                var msg = "class " + method_list[ii].def + " redefines method "
+                    + method_list[ii].name.id + " and changes type of formal " 
+                    + method_list[ii].formals[jj].name.id;
+                put_error(line_num, msg);
+            }
+        }
+    }
+}
 
 function run(){
+    // Read input
     if (process.argv.length !== 3){
         console.log("Need a file");
         process.exit(1);
@@ -241,19 +502,24 @@ function run(){
             process.exit(1);
         }
         var lines = data.split("\n");
+        // Deserialize AST
         var ast = rf.read_program(lines);
         //If there's such a thing as idiomatic javascript, this isn't it
         base = setup();
         object_class = base[3];
         ast.classes = ast.classes.concat(base);
+        // Classes are output in alphabetical order
         ast.classes.sort(function(a, b){
             if(a.name.id.toString() < b.name.id.toString()) return -1;
             if(a.name.id.toString() > b.name.id.toString()) return 1;
             return 0;
         });
         check_hierarchy(ast.classes);
-        fs.writeFile(in_file.substr(0, in_file.lastIndexOf('.')) + '.cl-type'
-            , out_class_map(ast.classes));
+        var map_out = method_checks(ast.classes);
+        // Write class_map to file
+        fs.writeFile(in_file.substr(0, in_file.lastIndexOf('.')) + '.cl-type', map_out);
     });
 }
+var base;
+var object_class;
 run()

@@ -18,6 +18,8 @@
 # cool stages
 *.cl-ast
 *.cl-lex
+*.cl-type
 
 # archives
 *.gz
+

@@ -19,11 +19,8 @@ function read_program(lines){
 function list_to_string(list){
     var str = "";
     str += list.length;
-    if(list.length > 0){
-        str += "\n";
-        str += list.map(function(e) {
-            return e.toString();
-        }).join("\n");
+    for (var ii = 0; ii < list.length; ii++){
+        str += '\n' + list[ii].toString();
     }
     return str;
 }
@@ -66,7 +63,7 @@ function read_feature(lines){
             feature.name = read_id(lines);
             feature.f_type = read_id(lines);
             feature.toString = function(){
-                var str = this.kind + '\n';
+                var str = 'no_initializer\n';
                 str += this.name.id.toString() + '\n';
                 str += this.f_type.id.toString();
                 return str;
@@ -77,7 +74,7 @@ function read_feature(lines){
             feature.f_type = read_id(lines);
             feature.init = read_exp(lines);
             feature.toString = function(){
-                var str = this.kind + '\n';
+                var str = 'initializer\n';
                 str += this.name.id + '\n';
                 str += this.f_type.id.toString() + '\n';
                 str += this.init.toString();
@@ -186,7 +183,17 @@ function read_exp(lines){
             exp.str_repr = exp.str_repr.substring(0, exp.str_repr.length -1);
             break;
         case "let":
+            exp.list = read_list(lines, read_binding);
+            exp.body = read_exp(lines);
+            exp.str_repr += list_to_string(exp.list) + '\n';
+            exp.str_repr += exp.body.toString();
+            break;
         case "case":
+            exp.e = read_exp(lines);
+            exp.cases = read_list(lines, read_case);
+            exp.str_repr += exp.e.toString() + '\n';
+            exp.str_repr += list_to_string(exp.cases);
+            break;
         default:
             console.log("FAILURE: unimplemented expression type " + exp.kind);
             break;
@@ -194,5 +201,39 @@ function read_exp(lines){
     exp.toString = function(){return exp.str_repr};
     return exp;
 }
+
+function read_binding(lines){
+    var binding = {};
+    binding.kind = lines.shift();
+    binding.variable = read_id(lines);
+    binding.type = read_id(lines);
+    if (binding.kind === "let_binding_init"){
+        binding.value = read_exp(lines);
+    }
+    binding.toString = function(){
+        var str = binding.kind + '\n' + binding.variable.toString() + '\n' 
+            + binding.type.toString();
+        if (binding.kind === "let_binding_init"){
+            str += '\n' + binding.value.toString();
+        }
+        return str;
+    }
+    return binding;
+}
+
+function read_case(lines){
+    case_obj = {};
+    case_obj.variable = read_id(lines);
+    case_obj.v_type = read_id(lines);
+    case_obj.body = read_exp(lines);
+    case_obj.toString = function(){
+        var str = this.variable.toString() + '\n';
+        str += this.v_type.toString() + '\n';
+        str += this.body.toString();
+        return str;
+    };
+    return case_obj;
+}
+
 
 exports.read_program = read_program;

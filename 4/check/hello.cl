@@ -1,4 +1,3 @@
-
 class Main inherits IO{
     main() : Object {
         out_string("Hello, world\n")
@@ -7,5 +6,9 @@ class Main inherits IO{
     b : String;
 };
 
-class B inherits A{};
-class A{};
+class B inherits A{
+    a() : Int {7};
+};
+class A{
+    a() : Int {5};
+};
