@@ -1,0 +1,7 @@
+Angstadt JS video
+CRM
+
+I used SOverflow for a lot of trivial javascript stuff including but not limited to:
+    importing files
+    mapping, filtering reducing
+    simple operations on arrays, objects, strings etc.

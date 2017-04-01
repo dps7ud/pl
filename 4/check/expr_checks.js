@@ -1,24 +1,41 @@
 var ts = require("./toposort.js");
 var SymbolTable = require("./symboltable.js").SymbolTable;
 
+/* This file defines functions and objects necessary to type-check expresssions
+
+   Global vars  : pairs, subs, supers -> lists of classes detailing class inheritace tree
+                : full_ancestry -> list of lists where each list is an inheritace
+                    chain form any given class to the Objects class.
+
+
+    functions   : pmap -> produces parent map string
+                : imap -> constructs implementation map and calls typechecking functions
+                    for initialized attributes and methods (all expressions)
+*/
 var pairs = []
 var subs = []
 var supers = []
 var full_ancestry = []
 
 function imap(parent_list){
+    // Populate global variables
     pairs = ts.to_pairs(parent_list);
     subs = ts.get_ith(pairs, 1);
     supers = ts.get_ith(pairs, 0);
     full_ancestry = [];
+
+    //  We need to pull out the object class for later
     var full_object_class = parent_list.filter( (item) => {
         return item.name.id === "Object";
     })[0];
+
+    //  This will be pused into our list of classes with associated attributes
     object_class = [full_object_class.name.id, full_object_class.features.map( (item) => {
         item.def = full_object_class.name.id;
         return item;
     })];
 
+    //  Constructs a chain [A, B, C, ..., Object]
     function get_ancestry(class_obj){
         var ancestry = [class_obj];
         while (true){
@@ -60,13 +77,13 @@ function imap(parent_list){
                 return item;
             });
 
+            //  Also get attributes
             var jj_attributes = full_ancestry[ii][jj].features.filter( (item) => {
                 return item.kind !== "method"
             }).map( (item) => {
                 item.def = full_ancestry[ii][jj].name.id;
                 return item;
             });
-
             attribs = attribs.concat(jj_attributes);
 
             //  Keep track of a set of method names already defined
@@ -79,7 +96,7 @@ function imap(parent_list){
                 return !methods_defined.has(item.name.id);
             }));
 
-            //  Replace everythin already defined
+            //  Replace everything already defined
             var to_replace = jj_methods.filter( (item) => {
                 return methods_defined.has(item.name.id);
             });
@@ -91,6 +108,7 @@ function imap(parent_list){
                 methods[index] = to_replace[kk];
             }
         }
+        //  Build up these lists for all classes
         attribute_map.push([class_obj.name.id, attribs]);
         imp_map.push([class_obj.name.id, methods])
     }
@@ -102,26 +120,31 @@ function imap(parent_list){
     full_ancestry.push([full_object_class]);
     attribute_map.push(["Object", []]);
 
-    //TODO: Implement
     //  With imp_map built, lets get all the strings
     imp_map.sort( (a,b) => {return (a[0]<b[0] ? -1 : (a[0]>b[0] ? 1 : 0))});
     attribute_map.sort( (a,b) => {return (a[0]<b[0] ? -1 : (a[0]>b[0] ? 1 : 0))});
-    check_class(attribute_map, imp_map);
+    check_classes(attribute_map, imp_map);
     var im_string = "implementation_map\n";
     im_string += list_to_string(imp_map, imap_class_to_string);
     return im_string;
 }
 
-function check_class(attribute_map, imp_map){
+//  Begins the type checking process
+function check_classes(attribute_map, imp_map){
+    //  Symbol tables for objects and methods and add self/S_T to objects,
+    // avoiding unbound id errors
     var methods = new SymbolTable();
     var objects = new SymbolTable();
+
     objects.add("self", "SELF_TYPE");
     objects.add("SELF_TYPE", "SELF_TYPE");
 
-    //  All classes should be available identifiers
-    // and have their own type
     for (var ii = 0; ii < imp_map.length; ii++){
+        //  All classes should be available identifiers
+        // and have their own type
         objects.add(imp_map[ii][0], imp_map[ii][0]);
+
+        //  And all methods should be visible with their associated class
         for (var jj = 0; jj < imp_map[ii][1].length; jj++){
             var method = imp_map[ii][1][jj];
             var type_list = method.formals.map( (item) => {
@@ -131,6 +154,12 @@ function check_class(attribute_map, imp_map){
             methods.add(imp_map[ii][0] + "," + method.name.id, type_list );
         }
     }
+
+    
+    /*  In here we  : add attributes to objects symbol table
+                    : typecheck expresssions of initialized attributes
+                    : type check each method body
+    */
     for (var ii = 0; ii < imp_map.length; ii++){
         //  Add all local attributes to table
         for (var jj = 0; jj < attribute_map[ii][1].length; jj++){
@@ -180,6 +209,8 @@ function check_class(attribute_map, imp_map){
 };
 
 
+//  Given an expression, objects, methods and the current class, this 
+// function will assign a type and return the same type
 function typecheck(exp, objects, methods, st){
     if (exp.type !== ''){
         return exp.type;
@@ -188,35 +219,41 @@ function typecheck(exp, objects, methods, st){
         case "assign":
 //            exp.variable = read_id(lines);
 //            exp.assign_exp = read_exp(lines);
+            if (exp.variable.id === "self"){
+                put_error(exp.variable.line, "cannot assign to self");
+            }
             if (objects.mem(exp.variable.id)){
                 exp.type = objects.find(exp.variable.id);
                 exp.assign_exp.type = typecheck(exp.assign_exp, objects, methods, st)
             } else {
                 put_error(exp.variable.line, 'unbound identifier ' + exp.variable.id);
             }
-
             if (!conforms(exp.assign_exp.type, exp.type, st, "assign")){
                 var msg = exp.assign_exp.type + " does not conform to " + exp.type
                     + " in assignment";
                 put_error(exp.line, msg);
             }
-
             return exp.assign_exp.type;
             break;
         case "dynamic_dispatch":
 //            exp.e = read_exp(lines);
 //            exp.method = read_id(lines);
 //            exp.args = read_list(lines, read_exp);
+            //  Check type of dispatch caller
             exp.e.type = typecheck(exp.e, objects, methods, st);
-            var temp_type = exp.e.type
+            //  We might need different variables to pass along
+            // the AST and to print (i.e., SELF_TYPE_C)
+            var temp_type = exp.e.type;
             if (exp.e.type === "SELF_TYPE"){
                 temp_type = st;
             }
+            //  Actually a method?
             if (!methods.mem(temp_type + ',' + exp.method.id)){
-                var msg = "unknown method " + exp.method.id
+                var msg = "unknown method " + exp.method.id 
                     + " in dispatch on " + temp_type
                 put_error(exp.line, msg);
             } else {
+                //  If yes, do we have the right number of args?
                 var type_list = methods.find(temp_type+','+exp.method.id);
                 var nargs = type_list.length - 1;
                 if (nargs !== exp.args.length){
@@ -224,6 +261,7 @@ function typecheck(exp, objects, methods, st){
                         + nargs + ")";
                     put_error(exp.line, msg);
                 }
+                //  If yes, are they all the right type?
                 for (var ii = 0; ii < nargs; ii++){
                     exp.args[ii].type = typecheck(exp.args[ii], objects, methods, st);
                     if (! conforms(exp.args[ii].type, type_list[ii], st)){
@@ -232,6 +270,7 @@ function typecheck(exp, objects, methods, st){
                         put_error(exp.args[ii].line, msg)
                     }
                 }
+                //  If yes, pass along return type, or caller type if S_T
                 exp.type = type_list[type_list.length - 1];
                 if (exp.type === "SELF_TYPE"){
                     return exp.e.type
@@ -240,6 +279,12 @@ function typecheck(exp, objects, methods, st){
             }
             break;
         case "static_dispatch":
+//            exp.e = read_exp(lines);
+//            exp.d_type = read_id(lines);
+//            exp.method = read_id(lines);
+//            exp.args = read_list(lines, read_exp);
+            //  Same as above but we check that the calling expression conforms
+            // to the inicated type
             exp.e.type = typecheck(exp.e, objects, methods, st);
             if (! conforms(exp.e.type, exp.d_type.id, st)){
                 var msg = exp.e.type + " does not conform to " + exp.d_type.id
@@ -267,14 +312,13 @@ function typecheck(exp, objects, methods, st){
                     }
                 }
                 exp.type = type_list[type_list.length - 1];
-                return exp.type
+                if (exp.type === "SELF_TYPE")
+                    return exp.e.type;
+                return exp.type;
             }
-//            exp.e = read_exp(lines);
-//            exp.d_type = read_id(lines);
-//            exp.method = read_id(lines);
-//            exp.args = read_list(lines, read_exp);
             break;
         case "self_dispatch":
+            //  Same as dynamic but caller expr is always self
             if (!methods.mem(st+','+exp.method.id)){
                 var msg = "unknown method " + exp.method.id
                     + " in dispatch on " + st
@@ -306,6 +350,7 @@ function typecheck(exp, objects, methods, st){
         case "times":
         case "minus":
         case "divide":
+            //  Do math with numbers and nothing else
             exp.x.type = typecheck(exp.x, objects, methods, st);
             exp.y.type = typecheck(exp.y, objects, methods, st);
             if (exp.x.type !== "Int" || exp.y.type !== "Int"){
@@ -318,6 +363,7 @@ function typecheck(exp, objects, methods, st){
         case "lt":
         case "le":
         case "eq":
+            //  Compare builtins with like builtins, or anything with antthing
             exp.x.type = typecheck(exp.x, objects, methods, st);
             exp.y.type = typecheck(exp.y, objects, methods, st);
             if (exp.x.type === "String" || exp.x.type === "Bool" || exp.x.type === "Int"){
@@ -329,6 +375,7 @@ function typecheck(exp, objects, methods, st){
             return "Bool"
             break;
         case "while":
+            //  Check predicate and body. The loop is always of type Object.
 //            exp.x = read_exp(lines);
 //            exp.y = read_exp(lines);
             exp.x.type = typecheck(exp.x, objects, methods, st);
@@ -350,6 +397,7 @@ function typecheck(exp, objects, methods, st){
             return "Int";
             break;
         case "if":
+            //  Check predicate. If has type lub(a,b) for a b then/else clauses
 //            exp.pred = read_exp(lines);
 //            exp.then = read_exp(lines);
 //            exp.otherwise = read_exp(lines);
@@ -364,6 +412,7 @@ function typecheck(exp, objects, methods, st){
             return exp.type
             break;
         case "block":
+            //  Make sure everything types and give back the last thing
 //            exp.body = read_list(lines, read_exp);
             for (var ii = 0; ii < exp.body.length; ii++){
                 exp.body[ii].type = typecheck(exp.body[ii], objects, methods, st);
@@ -371,7 +420,7 @@ function typecheck(exp, objects, methods, st){
             return exp.body[exp.body.length - 1].type;
             break;
         case "new":
-            //TODO resolve self_type
+            //  Whatever type we're given or containing class if S_T
             var temp_type = exp.type;
             if (objects.mem(exp.ident.id)){
                 temp_type = objects.find(exp.ident.id)
@@ -385,6 +434,7 @@ function typecheck(exp, objects, methods, st){
             return temp_type;
             break;
         case "identifier":
+            //  Either we have it or we don't
 //            exp.ident = read_id(lines);
             if (objects.mem(exp.ident.id)){
                 exp.type = objects.find(exp.ident.id)
@@ -394,10 +444,12 @@ function typecheck(exp, objects, methods, st){
             return exp.type;
             break;
         case "isvoid":
+            //  As long as the expr checks, isvoid is Bool
             exp.e.type = typecheck(exp.e, objects, methods, st);
             return "Bool"
             break;
         case "not":
+            //  Bool -> Bool
             exp.e.type = typecheck(exp.e, objects, methods, st);
             if (exp.e.type !== "Bool"){
                 var msg = "not applied to type " + exp.e.type + " instead of Bool";
@@ -407,7 +459,7 @@ function typecheck(exp, objects, methods, st){
             }
             break;
         case "negate":
-//            exp.e = read_exp(lines);
+            //  Int -> Int
             exp.e.type = typecheck(exp.e, objects, methods, st);
             if (exp.e.type !== "Int"){
                 var msg = "negate applied to type " + exp.e.type + " instead of Int";
@@ -422,8 +474,12 @@ function typecheck(exp, objects, methods, st){
             return "Bool";
             break;
         case "let":
+            //  Make sure bindings check, adding bindings from previous checks
             for (var ii = 0; ii < exp.list.length; ii++){
                 binding = exp.list[ii];
+                if (binding.variable.id === "self"){
+                    put_error(binding.variable.line, "binding self in a let is not allowed");
+                }
                 if (binding.kind === "let_binding_init"){
                     binding.value.type = typecheck(binding.value, objects, methods, st);
                     if (!conforms( binding.value.type, binding.type.id, st,"let")){
@@ -434,29 +490,27 @@ function typecheck(exp, objects, methods, st){
                 }
                 objects.add(binding.variable.id, binding.type.id);
             }
+            //  Then check the body with all our new toys
             exp.body.type = typecheck(exp.body, objects, methods, st);
+            //  And get rid of them all
             for (var ii = 0; ii < exp.list.length; ii++){
                 objects.remove(exp.list[ii].variable.id);
             }
             return exp.body.type
-//            exp.list = read_list(lines, read_binding);
-//            exp.body = read_exp(lines);
-//    binding.kind = lines.shift();
-//    binding.variable = read_id(lines);
-//    binding.type = read_id(lines);
-//    if (binding.kind === "let_binding_init"){
-//        binding.value = read_exp(lines);
-//    }
             break;
         case "case":
-
 //            exp.e = read_exp(lines);
 //            exp.cases = read_list(lines, read_case);
+//            case_obj.variable = read_id(lines);
+//            case_obj.v_type = read_id(lines);
+//            case_obj.body = read_exp(lines);
+            //  Check the expression and each case in turn, non-cumulatively
             exp.e.type = typecheck(exp.e, objects, methods, st);
             var type_list = [];
             var type_set = new Set();
             for (var ii = 0; ii < exp.cases.length; ii++){
                 case_obj = exp.cases[ii];
+                //  Also, we're not allowed to use S_T as a case branch
                 if (case_obj.v_type.id === "SELF_TYPE"){
                     var msg = "using SELF_TYPE as a case branch type is not allowed";
                     put_error(case_obj.v_type.line, msg);
@@ -464,6 +518,7 @@ function typecheck(exp, objects, methods, st){
                 objects.add(case_obj.variable.id, case_obj.v_type.id);
                 case_obj.body.type = typecheck(case_obj.body, objects, methods, st);
                 objects.remove(case_obj.variable.id);
+                //  Check each branch type is unique
                 if (type_set.has(case_obj.v_type.id)){
                     var msg = "case branch type " + case_obj.v_type.id + " is bound twice";
                     put_error(case_obj.body.line, msg);
@@ -471,23 +526,16 @@ function typecheck(exp, objects, methods, st){
                 type_set.add(case_obj.v_type.id);
                 type_list.push(case_obj.body.type);
             }
-    //case_obj.variable = read_id(lines);
-    //case_obj.v_type = read_id(lines);
-    //case_obj.body = read_exp(lines);
- 
 
-            exp.type = type_list.reduce((a,b) => {
-                var l = lub(a,b,st);
-                return l;
-            } , type_list[0]);
+            //  Take lub of all branches using (da-daaaaa) FOLD
+            exp.type = type_list.reduce((a,b) => { return lub(a,b,st); }, type_list[0]);
             return exp.type
             break;
     }
 };
 
-function conforms(class_a, class_b, st_context, info){
-//    console.log(class_a, class_b)
-//    console.log(st_context)
+//  Checks that class_a <= class_b given context *st_context*
+function conforms(class_a, class_b, st_context){
     if (class_a === "SELF_TYPE")
         class_a = st_context
     if (class_b === "SELF_TYPE")
@@ -498,6 +546,7 @@ function conforms(class_a, class_b, st_context, info){
     return supers_of_a.has(class_b);
 }
 
+//  returns LUB of class_a and class_b
 function lub(class_a, class_b, st_context){
 //    console.log(class_a, class_b)
     if (class_a === "SELF_TYPE" && class_b === "SELF_TYPE")
@@ -520,6 +569,7 @@ function lub(class_a, class_b, st_context){
     }
 }
 
+// ----- Here are functions for constructing implementation map and parent map as strings
 function list_to_string(list, to_str_func){
     var str = list.length + '\n';
     for (var ii = 0; ii < list.length; ii++){
@@ -547,6 +597,7 @@ function imap_formal_to_string(formal){
     return formal.name.id + '\n';
 }
 
+//  Does all the work for parent map
 function pmap(parent_list){
     //  parent_list is a list of classes that looks like:
     //[parent0, child0,...]

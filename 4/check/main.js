@@ -193,17 +193,12 @@ function check_hierarchy(classes){
             }).map( (item) => {
                 return parseInt(item.name.line);
             }))
-            console.log("ERROR: " + line_num + ": Type-Check: Class "
-
-                    + classes[ii].name.id.toString() + " redefined.");
-            process.exit(1);
+            put_error(line_num, "Class " + classes[ii].name.id.toString() + " redefined.");
         }
         s.add(classes[ii].name.id.toString());
         if (classes[ii].name.id.toString() === "Object") continue;
         if (classes[ii].name.id.toString() === "SELF_TYPE") {
-            console.log("ERROR: " + classes[ii].name.line 
-                    + ": Type-Check: Class named SELF_TYPE.")
-            process.exit(1);
+            put_error(classes[ii].name.line, "Class named SELF_TYPE");
         }
         if (classes[ii].inherits){
             parent_list.push(classes[ii].inherits);
@@ -233,18 +228,16 @@ function check_hierarchy(classes){
             if (find.length > 0) {
                 supers[ii] = find[0];
             } else {
-                console.log("ERROR: " + subs[ii].inherits.line + ": Type-Check: Class " 
-                        + subs[ii].name.id.toString()
-                        + " inherits from unknown class " + supers[ii].id.toString() );
-                process.exit(1);
+                var msg = "Class " + subs[ii].name.id.toString() 
+                    + " inherits from unknown class " + supers[ii].id.toString();
+                put_error(subs[ii].inherits.line, msg);
             }
         }
         // Checks for inherit from protected class
         if (cant_inherit.has(supers[ii].name.id.toString())){
-            console.log("ERROR: " + subs[ii].inherits.line + ": Type-Check: Class "
-                    + subs[ii].name.id.toString() + " inherits from " 
-                    + supers[ii].name.id.toString());
-            process.exit(1);
+            var msg = "Class " + subs[ii].name.id.toString() 
+                    + " inherits from " + supers[ii].name.id.toString();
+            put_error(subs[ii].inherits.line, msg);
         }
     }
     var names = parent_list.map(function(item){
@@ -256,8 +249,7 @@ function check_hierarchy(classes){
     });
     if( !ts.toposort(Array.from(new Set(names)), ts.to_pairs(names), [])){
         //TODO? better error, get cycle from ts.topo
-        console.log("ERROR: 0: Type-Check: Inheritance cycle: ");
-        process.exit(1);
+        put_error('0', "Inheritance cycle");
     }
 };
 
@@ -426,7 +418,6 @@ function method_checks(classes){
             var to_add = parents[jj].features.filter(
                         (item)=>{return item.kind !== "method";}).map( (item) => {
                 item.def = parents[jj].name.id;
-                console.log(item)
                 return item;
             });
             for (var kk = to_add.length-1; kk >= 0; kk--){
@@ -440,15 +431,12 @@ function method_checks(classes){
                 return item.name.id === "main";
             });
             if (main.length < 1){
-                console.log("ERROR: 0: Type-Check: class Main method main not found");
-                process.exit(1);
+                put_error('0', "class Main method main not found");
             }
             // Pick most recently defined, check later that all are the same
             main = main[0];
             if (main.formals.length > 0){
-                console.log("ERROR: 0: Type-Check: class Main method " 
-                        + "main with 0 parameters not found");
-                process.exit(1);
+                put_error('0', "class Main method main with 0 parameters not found");
             }
         }
 
@@ -516,7 +504,6 @@ function out_list(list){
         str += list[ii].name.id + '\n';
         str += list[ii].f_type.id + '\n';
         str += list[ii].init.toString();
-        console.log("init type", list[ii].init.type)
         } else {
             str += "no_initializer\n"
         str += list[ii].name.id + '\n';
@@ -564,13 +551,13 @@ function check_method_redefs(method_list){
 function run(){
     // Read input
     if (process.argv.length !== 3){
-        console.log("Need a file");
+        console.log("FAILURE: Need a file");
         process.exit(1);
     }
     var in_file = process.argv[2];
     fs.readFile(in_file, "utf-8", (err, data) => {
         if (err){
-            console.log("Error opening file\n");
+            console.log("FAILURE: opening file\n");
             process.exit(1);
         }
         var lines = data.split("\n");
@@ -580,7 +567,6 @@ function run(){
         base = setup();
         object_class = base[3];
         for (var ii = 0; ii < base.length; ii++){
-//                console.log(base[ii].toString());
         }
 
 
@@ -592,19 +578,10 @@ function run(){
             if(a.name.id.toString() > b.name.id.toString()) return 1;
             return 0;
         });
-//        ast.classes.sort(function(a, b){
-//            if(a.name.id.toString() < b.name.id.toString()) return -1;
-//            if(a.name.id.toString() > b.name.id.toString()) return 1;
-//            return 0;
-//        });
         check_hierarchy(ast.classes);
-//        var maps_out = method_checks(ast.classes);
         var maps_out = method_checks(other);
         var everything = maps_out.class_map + maps_out.imp_map + maps_out.parent_map
             + ast.toString();
-
-//        console.log(ast);
-//        console.log(ast.toString());
 
         fs.writeFile(in_file.substr(0, in_file.lastIndexOf('.')) + '.cl-type'
                 , everything);

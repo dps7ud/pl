@@ -1,13 +1,18 @@
 class Main{
     main() : Object { 
-        9
+        case closed of
+            d : D => new D;
+            e : E => new E;
+            f : F => new F;
+            g : G => new G;
+        esac
     };
+    closed : G;
     geta() : A{new A};
     f : A <- geta();
+    a : SELF_TYPE <- new SELF_TYPE;
     g : A <- new A;
 };
-class A{};
-(*
 class B inherits A{
     b() : Int {
         1
@@ -27,11 +32,3 @@ class C inherits A{
 };
 class F inherits C{};
 class G inherits C{};
-class A{
-    a : Int <- 4 + 67;
-    a() : Int {5};
-};
-class C inherits B{
-    c() : Int {4};
-};
-*)
