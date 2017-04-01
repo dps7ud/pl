@@ -586,13 +586,20 @@ function run(){
 
         ast.classes = ast.classes.concat(base);
         // Classes are output in alphabetical order
-        ast.classes.sort(function(a, b){
+        var other = ast.classes.slice();
+        other.sort(function(a, b){
             if(a.name.id.toString() < b.name.id.toString()) return -1;
             if(a.name.id.toString() > b.name.id.toString()) return 1;
             return 0;
         });
-        check_hierarchy(ast.classes);
-        var maps_out = method_checks(ast.classes);
+//        ast.classes.sort(function(a, b){
+//            if(a.name.id.toString() < b.name.id.toString()) return -1;
+//            if(a.name.id.toString() > b.name.id.toString()) return 1;
+//            return 0;
+//        });
+//        check_hierarchy(ast.classes);
+//        var maps_out = method_checks(ast.classes);
+        var maps_out = method_checks(other);
         var everything = maps_out.class_map + maps_out.imp_map + maps_out.parent_map
             + ast.toString();
 
