@@ -597,7 +597,7 @@ function run(){
 //            if(a.name.id.toString() > b.name.id.toString()) return 1;
 //            return 0;
 //        });
-//        check_hierarchy(ast.classes);
+        check_hierarchy(ast.classes);
 //        var maps_out = method_checks(ast.classes);
         var maps_out = method_checks(other);
         var everything = maps_out.class_map + maps_out.imp_map + maps_out.parent_map
