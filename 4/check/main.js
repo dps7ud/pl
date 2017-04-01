@@ -1,6 +1,9 @@
 var fs = require('fs');
 var ts = require("./toposort.js");
 var rf = require("./read_funcs.js");
+var st = require("./symboltable.js");
+var ec = require("./expr_checks.js");
+
 
 // Puts error message to stdout and ends program
 function put_error(line, message){
@@ -11,20 +14,22 @@ function put_error(line, message){
 
 // Construct and return an array of built-in classes
 // Probably should have just written the whole thing in JSON
-// TODO: hardcode built in classes
 function setup(){
     var classes = [];
     var class_names = ["Bool", "IO", "Int", "Object", "String"];
     for (var ii = 0; ii < class_names.length; ii++){
         var cool_class = {};
-        cool_class.name = {line: -1, id: class_names[ii]};
+        cool_class.name = {
+            line: "0", 
+            id: class_names[ii], 
+            toString : function() {return this.line + '\n' + this.id + '\n'}
+        }
         cool_class.inherits = false;
         cool_class.features = [];
 
         cool_class.toString = function(){
-            var str = this.name.toString();
+            var str = this.name.toString() + this.features.length + '\n';
             for (var ii = 0; ii < this.features.length; ii++){
-                str += '\n';
                 str += this.features[ii].toString();
             }
             return str;
@@ -32,86 +37,135 @@ function setup(){
         switch(cool_class.name.id){
             case "IO":
                 out_string = {};
-                out_string.name = { line : -1, id: "out_string"
+                out_string.name = { line : "0", id: "out_string"
                     , toString: function(){return this.id.toString();} }
-                formal = {name:{line:'-1',id:"x"}, f_type: {line:'-1',id:"String"}};
+                formal = {name:{line:'0',id:"x"}, f_type: {line:'0',id:"String"}};
                 out_string.formals = [formal];
                 out_string.ret_type = {line: "-1",id:"SELF_TYPE"};
                 out_string.kind = "method";
+                out_string.toString = function() {
+                    return this.body
+                }
 
                 out_int = {};
-                out_int.name = { line: -1, id: "out_int", toString: function(){return this.id}}
-                formal = {name: {line:'-1',id:"x"}, f_type: {line:'-1',id:"Int"}};
+                out_int.name = { line: "0", id: "out_int", toString: function(){return this.id}}
+                formal = {name: {line:'0',id:"x"}, f_type: {line:'0',id:"Int"}};
                 out_int.formals = [formal];
-                out_int.ret_type = {line: "-1",id:"SELF_TYPE"};
+                out_int.ret_type = {line: "0",id:"SELF_TYPE"};
                 out_int.kind = "method";
+                out_int.toString = function() {
+                    return this.body
+                }
 
                 in_string = {};
-                in_string.name = { line : -1, id: "in_string"
+                in_string.name = { line : "0", id: "in_string"
                     , toString: function(){return this.id.toString();} }
                 in_string.formals = [];
                 in_string.ret_type = {id:"String"};
                 in_string.kind = "method";
+                in_string.toString = function() {
+                    return this.body
+                }
 
                 in_int = {};
-                in_int.name = { line : -1, id: "in_int"
+                in_int.name = { line : "0", id: "in_int"
                     , toString: function(){return this.id.toString();} }
                 in_int.formals = [];
-                in_int.ret_type = {line: "-1",id:"Int"};
+                in_int.ret_type = {line: "0",id:"Int"};
                 in_int.kind = "method";
+                in_int.toString = function() {
+                    return this.body
+                }
 
-                cool_class.features = [out_string, out_int, in_string, in_int];
+                cool_class.features = [in_int, in_string, out_int, out_string];
                 break;
             case "Object":
                 abort = {};
-                abort.name = { line: -1, id: "abort", toString: function(){return this.id}}
+                abort.name = { line: '0', id: "abort", toString: function(){return this.id}}
                 abort.formals = [];
-                abort.ret_type = {line: "-1",id:"Object"};
+                abort.ret_type = {line: "0",id:"Object"};
                 abort.kind = "method";
+                abort.toString = function() {
+                    return this.body
+                }
 
                 type_name = {};
-                type_name.name = {line: -1, id: "type_name", toString: function(){return this.id}}
+                type_name.name = {
+                    line: '0', 
+                    id: "type_name", 
+                }
                 type_name.formals = [];
-                type_name.ret_type = {line: "-1",id:"String"};
+                type_name.ret_type = {line: "0",id:"String"};
                 type_name.kind = "method";
+                type_name.toString = function() {
+                    return this.body
+                }
 
                 copy = {};
                 copy.name = "copy"; 
-                copy.name = {line: -1, id: "copy", toString: function(){return this.id}}
+                copy.name = {line: '0', id: "copy", toString: function(){return this.id}}
                 copy.formals = [];
-                copy.ret_type = {line: "-1",id:"SELF_TYPE"};
+                copy.ret_type = {line: "0",id:"SELF_TYPE"};
                 copy.kind = "method";
-                cool_class.features = [abort, type_name, copy];
+                copy.toString = function() {
+                    return this.body
+                }
+                cool_class.features = [abort, copy, type_name];
                 break;
             case "String":
                 length = {}
                 length.name = "length";
-                length.name = {line: -1, id: "length", toString: function(){return this.id}}
+                length.name = {line: '0', id: "length", toString: function(){return this.id}}
                 length.formals = [];
-                length.ret_type = {line: "-1",id:"Int"};
+                length.ret_type = {line: "0",id:"Int"};
                 length.kind = "method";
+                length.toString = function() {
+                    return this.body
+                }
 
                 concat = {}
-                concat.name = {line: -1, id: "concat", toString: function(){return this.id}}
-                formal = {name: {line:'-1',id:"s"}, f_type: {line:'-1',id:"String"}};
+                concat.name = {line: '0', id: "concat", toString: function(){return this.id}}
+                formal = {name: {line:'0',id:"s"}, f_type: {line:'0',id:"String"}};
                 concat.formals = [formal];
-                concat.ret_type = {line: "-1",id:"String"};
+                concat.ret_type = {line: "0",id:"String"};
                 concat.kind = "method";
+                concat.toString = function() {
+                    return this.body
+                }
 
                 substr = {}
                 substr.name = "substr";
-                substr.name = {line: -1, id: "substr", toString: function(){return this.id}}
-                formal = {name: {line:'-1',id:"i"}, f_type: {line:'-1',id:"Int"}};
-                formal_2 = {name: {line:'-1',id:"l"}, f_type: {line:'-1',id:"Int"}};
+                substr.name = {line: '0', id: "substr", toString: function(){return this.id}}
+                formal = {name: {line:'0',id:"i"}, f_type: {line:'0',id:"Int"}};
+                formal_2 = {name: {line:'0',id:"l"}, f_type: {line:'0',id:"Int"}};
                 substr.formals = [formal, formal_2];
-                substr.ret_type = {line: "-1",id:"String"};
+                substr.ret_type = {line: "0",id:"String"};
                 substr.kind = "method";
-                cool_class.features = [length, concat, substr];
+                substr.toString = function() {
+                    return this.body
+                }
+                cool_class.features = [concat, length, substr];
                 break;
             default:
                 break;
         }
         classes.push(cool_class);
+    }
+    for (var ii = 0; ii < classes.length; ii++){
+        for (var jj = 0; jj < classes[ii].features.length; jj++){
+            classes[ii].features[jj].body = classes[ii].features[jj].name.line 
+                + '\n' + classes[ii].features[jj].ret_type.id + '\ninternal\n' 
+                + classes[ii].name.id + '.' + classes[ii].features[jj].name.id + '\n';
+           // {
+           //     name: classes[ii].name,
+           //     ret_type: classes[ii].ret_type,
+           // };
+           // classes[ii].features[jj].body.toString = function() {
+           //   return this.name.line + '\n' + this.ret_type.id + '\ninternal\n' 
+           //       + classes[ii].name.id + '.' + this.name.id + '\n';
+           //   
+           // }
+        }
     }
     return classes;
 }
@@ -167,6 +221,8 @@ function check_hierarchy(classes){
     var pairs = ts.to_pairs(parent_list);
     var subs = ts.get_ith(pairs, 1);
     var supers = ts.get_ith(pairs, 0);
+    
+
     var cant_inherit = new Set(["Bool", "Int", "String"]);
     for (var ii = 0; ii < supers.length; ii++){
         // Checks for undefined superclass
@@ -327,6 +383,10 @@ function method_checks(classes){
     var pairs = ts.to_pairs(parent_list);
     var subs = ts.get_ith(pairs, 1);
     var supers = ts.get_ith(pairs, 0);
+    var ans = {};
+    var destructable = parent_list.slice()
+    ans.parent_map = ec.pmap(destructable);
+    ans.imp_map = ec.imap(parent_list);
 
     // Construcs an inheritance chain from classes[ii] to Object
     function get_ancestry(class_obj){
@@ -442,7 +502,8 @@ function method_checks(classes){
         ret += classes[ii].name.id.toString() + '\n';
         ret += out_list(all_attribs);
     }
-    return ret;
+    ans.class_map = ret
+    return ans;
 }
 
 // Build string from list (used for attributes)
@@ -507,6 +568,11 @@ function run(){
         //If there's such a thing as idiomatic javascript, this isn't it
         base = setup();
         object_class = base[3];
+        for (var ii = 0; ii < base.length; ii++){
+//                console.log(base[ii].toString());
+        }
+
+
         ast.classes = ast.classes.concat(base);
         // Classes are output in alphabetical order
         ast.classes.sort(function(a, b){
@@ -515,9 +581,18 @@ function run(){
             return 0;
         });
         check_hierarchy(ast.classes);
-        var map_out = method_checks(ast.classes);
-        // Write class_map to file
-        fs.writeFile(in_file.substr(0, in_file.lastIndexOf('.')) + '.cl-type', map_out);
+        var maps_out = method_checks(ast.classes);
+        var everything = maps_out.class_map + maps_out.imp_map + maps_out.parent_map
+            + ast.toString();
+
+//        console.log(ast);
+//        console.log(ast.toString());
+
+        fs.writeFile(in_file.substr(0, in_file.lastIndexOf('.')) + '.cl-type'
+                , everything);
+//                , maps_out.imp_map);
+//                , maps_out.parent_map);
+//                , maps_out.class_map);
     });
 }
 var base;

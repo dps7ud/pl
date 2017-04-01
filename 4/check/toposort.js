@@ -26,7 +26,6 @@ function to_pairs(array){
 }
 
 function topo(tasks, pairs, ans) {
-//    console.log(tasks, pairs, ans);
     if(tasks.length > 0){
         var prereqs = ith(pairs,0);
         var todo = tasks.filter( (item) => {
