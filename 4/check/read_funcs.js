@@ -70,9 +70,12 @@ function read_feature(lines){
             feature.name = read_id(lines);
             feature.f_type = read_id(lines);
             feature.toString = function(){
-                var str = 'no_initializer\n';
-                str += this.name.id.toString();
-                str += this.f_type.id.toString();
+           //     var str = 'no_initializer\n';
+           //     str += this.name.id.toString() + '\n';
+           //     str += this.f_type.id.toString() + '\n';
+                var str = this.kind + '\n';
+                str += this.name.toString();
+                str += this.f_type.toString();
                 return str;
             }
             break;
@@ -81,9 +84,12 @@ function read_feature(lines){
             feature.f_type = read_id(lines);
             feature.init = read_exp(lines);
             feature.toString = function(){
-                var str = 'initializer\n';
+//                var str = 'initializer\n';
+//                str += this.name.id.toString();
+//                str += this.f_type.id.toString();
+                var str = this.kind + '\n';
                 str += this.name.toString();
-                str += this.f_type.id.toString();
+                str += this.f_type.toString();
                 str += this.init.toString(); 
                 return str;
             }
@@ -195,7 +201,7 @@ function read_exp(lines){
             };
             break;
         case "string":
-            exp.type = "String";
+//            exp.type = "String";
             exp.constant = lines.shift();
             exp.toString = () => { 
                 return exp.line + '\n'
@@ -205,7 +211,7 @@ function read_exp(lines){
             };
             break;
         case "integer":
-            exp.type = "Int";
+//            exp.type = "Int";
             exp.constant = lines.shift();
             exp.toString = () => { 
                 return exp.line + '\n'
@@ -260,7 +266,7 @@ function read_exp(lines){
             break;
         case "true":
         case "false":
-            exp.type = "Bool";
+//            exp.type = "Bool";
             exp.toString = () => { 
                 return exp.line + '\n'
                     + exp.type + '\n'

@@ -426,6 +426,7 @@ function method_checks(classes){
             var to_add = parents[jj].features.filter(
                         (item)=>{return item.kind !== "method";}).map( (item) => {
                 item.def = parents[jj].name.id;
+                console.log(item)
                 return item;
             });
             for (var kk = to_add.length-1; kk >= 0; kk--){
@@ -510,7 +511,17 @@ function method_checks(classes){
 function out_list(list){
     var str = list.length + '\n';
     for (var ii = 0; ii < list.length; ii++){
-        str += list[ii].toString() + '\n';
+        if (list[ii].kind === "attribute_init"){
+            str += "initializer\n"
+        str += list[ii].name.id + '\n';
+        str += list[ii].f_type.id + '\n';
+        str += list[ii].init.toString();
+        console.log("init type", list[ii].init.type)
+        } else {
+            str += "no_initializer\n"
+        str += list[ii].name.id + '\n';
+        str += list[ii].f_type.id + '\n';
+        }
     }
     return str;
 }

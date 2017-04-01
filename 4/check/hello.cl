@@ -1,24 +1,24 @@
-class Main inherits IO{
+class Main{
     main() : Object { 
         9
     };
+    geta() : A{new A};
+    f : A <- geta();
+    g : A <- new A;
 };
+class A{};
 (*
-    i : Object <- printh();
-
-    printh() : Int {  0};
+class B inherits A{
+    b() : Int {
+        1
+    };
+--    c : Int <- b@A();
 };
 class A{
     a : Int;
     b() : Int {
         a
     };
-};
-class B inherits A{
-    b() : Int {
-        1
-    };
---    c : Int <- b@A();
 };
 class D inherits B{};
 class E inherits B{};

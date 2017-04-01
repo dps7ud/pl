@@ -144,7 +144,6 @@ function check_class(attribute_map, imp_map){
             var check_attrib = attribute_map[ii][1][jj]
             if (check_attrib.kind === "attribute_init") {
                 var actual = typecheck(check_attrib.init, objects, methods, imp_map[ii][0]);
-                    //TODO check conformity not equality
                 if (!conforms(actual, check_attrib.f_type.id, 
                             attribute_map[ii][0], 'init attribs')){
                     var msg = actual + " does not conform to " + check_attrib.f_type.id
@@ -313,6 +312,7 @@ function typecheck(exp, objects, methods, st){
                 put_error(exp.x.line, "arithmatic on " + exp.x.type + " " + exp.y.type 
                         + " instead of Ints");
             }
+            exp.type = "Int";
             return "Int";
             break;
         case "lt":
@@ -340,12 +340,12 @@ function typecheck(exp, objects, methods, st){
             return "Object"
             break;
         case "string":
-//            exp.type = "String";
+            exp.type = "String";
 //            exp.constant = lines.shift();
             return "String";
             break;
         case "integer":
-//            exp.type = "Int";
+            exp.type = "Int";
 //            exp.constant = lines.shift();
             return "Int";
             break;
@@ -381,6 +381,7 @@ function typecheck(exp, objects, methods, st){
             if (exp.type === "SELF_TYPE"){
                 temp_type = st;
             }
+            exp.type = temp_type
             return temp_type;
             break;
         case "identifier":
@@ -417,7 +418,7 @@ function typecheck(exp, objects, methods, st){
             break;
         case "true":
         case "false":
-//            exp.type = "Bool";
+            exp.type = "Bool";
             return "Bool";
             break;
         case "let":
@@ -473,10 +474,13 @@ function typecheck(exp, objects, methods, st){
     //case_obj.variable = read_id(lines);
     //case_obj.v_type = read_id(lines);
     //case_obj.body = read_exp(lines);
-            return type_list.reduce((a,b) =>{
+ 
+
+            exp.type = type_list.reduce((a,b) => {
                 var l = lub(a,b,st);
-                return l;} // for debugging, TODO: just use lub
-                , type_list[0]);
+                return l;
+            } , type_list[0]);
+            return exp.type
             break;
     }
 };
