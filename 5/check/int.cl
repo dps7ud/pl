@@ -1,5 +1,5 @@
 class Main{
-    i: Int <- 4 + 1;
+    i: Int <- 4;
     main() : Object{
         i
     };

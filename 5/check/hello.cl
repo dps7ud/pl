@@ -1,6 +1,6 @@
 class Main inherits IO{
-    i : Int;
+    s: String;
     main() : Object{
-        4
+        out_string("Hello, world\n")
     };
 };
