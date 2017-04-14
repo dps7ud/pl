@@ -1,10 +1,10 @@
-type loc = string
+(*type loc = string
 type id = loc * string
-type cool_type = id
+type cool_type = id*)
 type class_map = attrib_class list
-(*and loc = string
-and id = loc * string
-and cool_type = id*)
+and id = string
+and loc = string
+and cool_type = string (*id*)
 and attrib_class = id * attrib list
 and attrib = id * cool_type * (exp option)
 and exp =
@@ -43,9 +43,11 @@ let main () = begin
         let name = read() in
         (loc, name)
 
-    and read_attrib ()=
-        match read() with
-        | "no_initializer" -> None
+    and read_attrib () =
+        let init = match read() with
+        | "no_initializer" ->
+            let aname = read_id () in
+            let 
         | "initializer" -> read_exp()
 
     and read_attrib_class () =
