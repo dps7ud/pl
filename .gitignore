@@ -3,6 +3,9 @@
 *.o
 *.pyc
 *.pyo
+*.cmi
+*.cmo
+*.out
 
 # Vim swp files
 *.sw
