@@ -78,14 +78,14 @@ let rec exp_to_str expr =
     | (_,_,Assign(x, e)) -> sprintf "Assign(%s, %s)" x (exp_to_str e)
     | (_,_,Integer(i)) -> sprintf "Integer(%ld)" i
     | (_,_,Plus(e1, e2)) -> sprintf "Plus(%s, %s)" (exp_to_str e1) (exp_to_str e2)
-    | (_,_,String(s)) -> sprintf "String(%s)" s
+    | (_,_,String(s)) -> sprintf "String(\"%s\")" s
     | (_,_,Internal(s)) -> sprintf "Internal(%s)" s
 
 let value_to_str v =
     match v with
     | Cool_Int(i) -> sprintf "Int(%ld)" i
     | Cool_Bool(b) -> sprintf "Bool(%b)" b
-    | Cool_String(s, i) -> sprintf "String(%s, %d)" s i
+    | Cool_String(s, i) -> sprintf "String(\"%s\", %d)" s i
     | Void -> sprintf "Void"
     | Cool_Object(cname, attrs) ->
             let attr_str = List.fold_left (fun acc (aname, aaddr) ->
@@ -96,13 +96,13 @@ let value_to_str v =
 let env_to_str env =
     let binding_str = List.fold_left (fun acc (aname, aaddr) ->
         sprintf "%s, %s=%d" acc aname aaddr
-    ) "" env in
+    ) "" (List.sort compare env) in
     sprintf "[%s]" binding_str
 
 let store_to_str store_in =
     let store_str = List.fold_left (fun acc (addr, cvalue) ->
         sprintf "%s, %d=%s" acc addr (value_to_str cvalue)
-    ) "" store_in in
+    ) "" (List.sort compare store_in) in
     sprintf "[%s]" store_str
 
 let indent_count = ref 0
@@ -126,15 +126,15 @@ let rec range k =
 
 let read_list worker =
     let temp = read() in
-    (*printf "%s::%d\n" temp !lnum ;*)
-    let k = int_of_string (temp(*read()*)) in
+    printf "%s::%d\n" temp !lnum ;
+(*    let k = int_of_string (temp(*read()*)) in*)
     let lst = range k in
     List.map (fun _ -> worker () ) lst
 
 let read_list_arg worker arg=
     let temp = read() in
-    (*printf "%s::%d\n" temp !lnum ;*)
-    let k = int_of_string (temp(*read()*)) in
+    printf "%s::%d\n" temp !lnum ;
+(*    let k = int_of_string (temp(*read()*)) in*)
     let lst = range k in
     List.map (fun _ -> worker arg ) lst
 
@@ -197,6 +197,7 @@ and read_exp () =
     let loc = read() in
 (*    printf "exp loc: %s@%d\n" loc !lnum;*)
     let c_type = read() in
+(*    printf "exp type: %s@%d\n" c_type !lnum;*)
     match read () with
         | "integer" -> 
                 let temp = read() in
@@ -209,7 +210,37 @@ and read_exp () =
         | "internal" ->
                 let internal_str = read() in
                 (loc, c_type, Internal internal_str)
-        | x -> failwith ("Unhandled exp kind: " ^ x)
+        | "new" ->
+                (*TODO now I'm worrying I'm not handling 
+                 * linenos correctly*)
+                let _ = read() in
+                let ntype = read() in
+                (loc, c_type, New ntype)
+        | "plus" ->
+                let e1 = read_exp () in
+                let e2 = read_exp () in
+                (loc, c_type, Plus(e1,e2))
+        | "identifier" ->
+                (*TODO Why is there a lino here?*)
+                let _ = read() in
+                let vname = read() in
+                (loc, c_type, Variable vname)
+        | x -> failwith ("Unhandled exp kind:: " ^ x)
+        (*
+    | (_,_,New(s)) -> sprintf "New(%s)" s
+    | (_,_,Dispatch(obj, fname, args)) -> 
+            let arg_str = List.fold_left (fun acc elt ->
+                acc ^ ", " ^ (exp_to_str elt)
+            ) "" args in
+            (* "" (List.map (fun (_,_,e) -> e) args) in*)
+            sprintf "Dispatch(%s, %s, [%s])" (exp_to_str obj) fname arg_str
+    | (_,_,Variable(x)) -> sprintf "Variable(%s)" x
+    | (_,_,Assign(x, e)) -> sprintf "Assign(%s, %s)" x (exp_to_str e)
+    | (_,_,Integer(i)) -> sprintf "Integer(%ld)" i
+    | (_,_,Plus(e1, e2)) -> sprintf "Plus(%s, %s)" (exp_to_str e1) (exp_to_str e2)
+    | (_,_,String(s)) -> sprintf "String(\"%s\")" s
+    | (_,_,Internal(s)) -> sprintf "Internal(%s)" s
+    *)
 
 let cm = read_class_map ()
 let im = read_imp_map ()
@@ -253,10 +284,11 @@ let rec eval (so : cool_value)    (* self object *)
              (cool_value * store) (*resulting value and updated store*)
              =
     indent_count := !indent_count + 2;
-    debug_indent () ; debug "so: %s\n" (value_to_str so);
-    debug_indent () ; debug "eval: %s\n" (exp_to_str expr);
-    debug_indent () ; debug "store: %s\n" (store_to_str s);
-    debug_indent () ; debug "env: %s\n" (env_to_str e);
+    debug "\n";
+    debug_indent () ; debug "eval.:%s\n" (exp_to_str expr);
+    debug_indent () ; debug "so...=%s\n" (value_to_str so);
+    debug_indent () ; debug "store=%s\n" (store_to_str s);
+    debug_indent () ; debug "env..=%s\n" (env_to_str e);
     let new_val, new_store = match expr with
     | (_,_,Integer(i)) -> Cool_Int(i), s
     | (_,_,Plus(e1,e2)) -> 
@@ -274,6 +306,9 @@ let rec eval (so : cool_value)    (* self object *)
             let l1 = List.assoc vname e in
             let s3 = (l1, v1) :: List.remove_assoc l1 s2 in
             v1, s3
+    | (_,_, Variable(vname)) ->
+            let loc = List.assoc vname e  in
+            List.assoc loc s, s
     | (_,_, New("SELF_TYPE")) -> failwith "implement New S_T"
     | (_,_, New(cname)) ->
             let attrs_and_inits = List.assoc cname cm in
@@ -321,8 +356,9 @@ let rec eval (so : cool_value)    (* self object *)
 
     | _ -> failwith "Unhandled expr type"
     in
-    debug_indent(); debug "ret = %s\n" (value_to_str new_val);
-    debug_indent(); debug "store after = %s\n" (store_to_str new_store);
+    debug_indent(); debug "++++++++++++\n";
+    debug_indent(); debug "ret val.=%s\n" (value_to_str new_val);
+    debug_indent(); debug "retstore=%s\n" (store_to_str new_store);
     indent_count := !indent_count - 2;
     new_val, new_store
 
@@ -367,8 +403,6 @@ let main () = begin
     List.map func_3 cm;
     *)
 
-
-
     let my_expr = ("0", "Int",Plus(("0","Int",Integer(5l)),("0","Int",Integer(3l)))) in
     debug "my_expr = %s\n" (exp_to_str my_expr);
     
@@ -381,7 +415,8 @@ let main () = begin
     let final_val, final_store =
 (*        eval init_so init_store init_env my_expr in*)
         eval init_so init_store init_env my_new in
-    debug "result = %s\n" (value_to_str final_val);
+    debug "result val   = %s\n" (value_to_str final_val);
+    debug "result store = %s\n" (store_to_str final_store);
 
 end;;
 main();;
