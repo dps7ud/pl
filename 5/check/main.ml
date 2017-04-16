@@ -13,7 +13,7 @@ type class_map = (string * ( (string * string * exp option) list)) list
 and exp = string * string * exp_kind
 and exp_kind =
     | New of string
-    | Dispatch of exp * string * (exp list)
+    | Dispatch of (exp option) * string * (exp list)
     | Variable of string
     | Assign of string * exp
     | Integer of Int32.t
@@ -58,7 +58,7 @@ let newloc () =
 (***************************)
 (** Debugging and Tracing **)
 (***************************)
-let do_debug = ref true
+let do_debug = ref false
 let debug fmt=
     let handle result_string =
         if !do_debug then printf "%s" result_string
@@ -68,7 +68,13 @@ let debug fmt=
 let rec exp_to_str expr =
     match expr with
     | (_,_,New(s)) -> sprintf "New(%s)" s
-    | (_,_,Dispatch(obj, fname, args)) -> 
+    | (_,_,Dispatch(None, fname, args)) -> 
+            let arg_str = List.fold_left (fun acc elt ->
+                acc ^ ", " ^ (exp_to_str elt)
+            ) "" args in
+            (* "" (List.map (fun (_,_,e) -> e) args) in*)
+            sprintf "Dispatch(<self>, %s, [%s])" fname arg_str
+    | (_,_,Dispatch(Some obj, fname, args)) -> 
             let arg_str = List.fold_left (fun acc elt ->
                 acc ^ ", " ^ (exp_to_str elt)
             ) "" args in
@@ -126,15 +132,15 @@ let rec range k =
 
 let read_list worker =
     let temp = read() in
-    printf "%s::%d\n" temp !lnum ;
-(*    let k = int_of_string (temp(*read()*)) in*)
+(*    printf "%s::%d\n" temp !lnum ;*)
+    let k = int_of_string (temp(*read()*)) in
     let lst = range k in
     List.map (fun _ -> worker () ) lst
 
 let read_list_arg worker arg=
     let temp = read() in
-    printf "%s::%d\n" temp !lnum ;
-(*    let k = int_of_string (temp(*read()*)) in*)
+(*    printf "%s::%d\n" temp !lnum ;*)
+    let k = int_of_string (temp(*read()*)) in
     let lst = range k in
     List.map (fun _ -> worker arg ) lst
 
@@ -225,6 +231,17 @@ and read_exp () =
                 let _ = read() in
                 let vname = read() in
                 (loc, c_type, Variable vname)
+        | "self_dispatch" ->
+                let _ = read() in
+                let mname = read() in
+                let arglist = read_list read_exp in
+                (loc, c_type, Dispatch(None, mname, arglist))
+        | "dynamic_dispatch" ->
+                let e0 = read_exp() in
+                let _ = read() in
+                let mname = read() in
+                let arglist = read_list read_exp in
+                (loc, c_type, Dispatch(Some e0, mname, arglist))
         | x -> failwith ("Unhandled exp kind:: " ^ x)
         (*
     | (_,_,New(s)) -> sprintf "New(%s)" s
@@ -276,6 +293,24 @@ close_in fin ;;
 (****************)
 (** Evaluation **)
 (****************)
+
+let rec fuck str =
+  try
+    let i = String.index str '\\' in
+    if String.length str > i + 1 && str.[i+1] == 'n' then
+        (String.sub str 0 i) 
+        ^ "\n" 
+        ^ (fuck (String.sub str (i + 2) ((String.length str) - (i + 2)) ))
+    else 
+        if String.length str > i + 1 && str.[i+1] == 't' then
+        (String.sub str 0 i) 
+        ^ "\t" 
+        ^ (fuck (String.sub str (i + 2) ((String.length str) - (i + 2)) ))
+        else
+            str
+  with Not_found -> str;;
+let err linum msg =
+    sprintf "ERROR: %s: Exception: %s." linum msg
 let rec eval (so : cool_value)    (* self object *)
              (s : store)          (* _the_ store *)
              (e : environment)    (* _the_ environment *)
@@ -290,7 +325,57 @@ let rec eval (so : cool_value)    (* self object *)
     debug_indent () ; debug "store=%s\n" (store_to_str s);
     debug_indent () ; debug "env..=%s\n" (env_to_str e);
     let new_val, new_store = match expr with
+    | (loc,_,Dispatch(None, fname, args)) ->
+            let current_store = ref s in
+            let arg_values = List.map (fun arg_exp ->
+                let arg_value, new_store = eval so !current_store e arg_exp in
+                current_store := new_store;
+                arg_value
+            ) args in
+            (*No e0 to evaluate so we continue with v0:=so*)
+            let s_n2 = !current_store in
+            let v0 = so in
+            begin match v0 with
+            | Void -> failwith (err loc "dispatch on void")
+            | Cool_Object (x, attrs_and_locs) ->
+                    let formals, body = List.assoc (x, fname) im in
+                    let new_arg_locs = List.map (fun arg_exp ->
+                        newloc()
+                    ) args in
+                    let formals_and_locs = List.combine formals new_arg_locs in
+                    let store_update = List.combine new_arg_locs arg_values in
+                    let s_n3 = store_update @ s_n2 in
+                    let inner_env = formals_and_locs @ attrs_and_locs in
+                    eval v0 s_n3 inner_env body
+
+            | _ -> failwith "Dispatch object not handled"
+            end
+    | (loc,_,Dispatch((Some e0), fname, args)) ->
+            let current_store = ref s in
+            let arg_values = List.map (fun arg_exp ->
+                let arg_value, new_store = eval so !current_store e arg_exp in
+                current_store := new_store;
+                arg_value
+            ) args in
+            let v0, s_n2 = eval so !current_store e e0 in
+            begin match v0 with
+            | Void -> failwith (err loc "dispatch on void")
+            | Cool_Object (x, attrs_and_locs) ->
+                    let formals, body = List.assoc (x, fname) im in
+                    let new_arg_locs = List.map (fun arg_exp ->
+                        newloc()
+                    ) args in
+                    let formals_and_locs = List.combine formals new_arg_locs in
+                    let store_update = List.combine new_arg_locs arg_values in
+                    let s_n3 = store_update @ s_n2 in
+                    let inner_env = formals_and_locs @ attrs_and_locs in
+                    eval v0 s_n3 inner_env body
+
+            | _ -> failwith "Dispatch object not handled"
+            end
+
     | (_,_,Integer(i)) -> Cool_Int(i), s
+    | (_,_,String(str)) -> Cool_String(str, String.length str), s
     | (_,_,Plus(e1,e2)) -> 
             let v1, s2 = eval so s e e1 in
             let v2, s3 = eval so s2 e e2 in
@@ -350,11 +435,29 @@ let rec eval (so : cool_value)    (* self object *)
                 updated_store
             ) s2 initialized_attribs in
             v1, final_store
-(*            let new_attr_locs = List.map (fun (aname, atype, ainit) ->*)
-            
-(*            failwith "Do initialize as assignments"*)
-
-    | _ -> failwith "Unhandled expr type"
+    | (_,_, Internal(fname)) -> 
+            begin match fname with
+            | "IO.out_string" ->
+                    let loc = List.assoc "x" e in
+                    let str = List.assoc loc s in
+                    begin match str with
+                    | Cool_String(str_lit, strlen) -> 
+                            printf "%s" (fuck str_lit);
+                    so, s
+                    | _ -> failwith "Bad out_string"
+                    end
+            | "IO.out_int" ->
+                    let loc = List.assoc "x" e in
+                    let c_int = List.assoc loc s in
+                    begin match c_int with
+                    | Cool_Int(int_lit) -> printf "%ld" int_lit;
+                    so, s
+                    | _ -> failwith "Bad out_int"
+                    end
+            | _ -> failwith ("Unimplemented internal " ^ fname)
+            end
+    | _ -> failwith ( sprintf "Unhandled expr type %s" (exp_to_str expr))
+    (*TODO Find out why this ^ is "unused"*)
     in
     debug_indent(); debug "++++++++++++\n";
     debug_indent(); debug "ret val.=%s\n" (value_to_str new_val);
@@ -409,12 +512,16 @@ let main () = begin
     let my_new = ("0", "Main", New("Main")) in
     debug "my_new = %s\n" (exp_to_str my_new);
 
+    let last = ("0", "Object", Dispatch( Some ("0", "Object", New("Main")), "main", [])) in
+    debug "last = %s\n" (exp_to_str my_new);
+
     let init_so = Void in
     let init_store = [] in
     let init_env = [] in
     let final_val, final_store =
 (*        eval init_so init_store init_env my_expr in*)
-        eval init_so init_store init_env my_new in
+(*        eval init_so init_store init_env my_new in*)
+        eval init_so init_store init_env last in
     debug "result val   = %s\n" (value_to_str final_val);
     debug "result store = %s\n" (store_to_str final_store);
 
