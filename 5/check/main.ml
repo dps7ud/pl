@@ -320,18 +320,18 @@ close_in fin ;;
 (** Evaluation **)
 (****************)
 
-let rec fuck str =
+let rec str_format str =
   try
     let i = String.index str '\\' in
     if String.length str > i + 1 && str.[i+1] == 'n' then
         (String.sub str 0 i) 
         ^ "\n" 
-        ^ (fuck (String.sub str (i + 2) ((String.length str) - (i + 2)) ))
+        ^ (str_format (String.sub str (i + 2) ((String.length str) - (i + 2)) ))
     else 
         if String.length str > i + 1 && str.[i+1] == 't' then
         (String.sub str 0 i) 
         ^ "\t" 
-        ^ (fuck (String.sub str (i + 2) ((String.length str) - (i + 2)) ))
+        ^ (str_format (String.sub str (i + 2) ((String.length str) - (i + 2)) ))
         else
             str
   with Not_found -> str;;
@@ -378,7 +378,7 @@ let rec eval (so : cool_value)    (* self object *)
             let s_n2 = !current_store in
             let v0 = so in
             begin match v0 with
-            | Void -> failwith (err loc "dispatch on void")
+            | Void -> err loc "dispatch on void"
             | Cool_Object (x, attrs_and_locs) ->
                     let formals, body = List.assoc (x, fname) im in
                     let new_arg_locs = List.map (fun arg_exp ->
@@ -433,7 +433,7 @@ let rec eval (so : cool_value)    (* self object *)
             let v0, s_n2 = eval so !current_store e e0 in
             begin match v0 with
 
-            | Void -> failwith (err loc "dispatch on void")
+            | Void -> err loc "dispatch on void"
 
             | Cool_Object (x, attrs_and_locs) ->
                     let formals, body = List.assoc (x, fname) im in
@@ -478,8 +478,6 @@ let rec eval (so : cool_value)    (* self object *)
                     let s_n3 = store_update @ s_n2 in
                     let inner_env = formals_and_locs in
                     eval v0 s_n3 inner_env body
-
-            | _ -> failwith "Dispatch object not handled"
             end
     | (loc,_,Divide(e1,e2)) -> 
             let v1, s2 = eval so s e e1 in
@@ -508,7 +506,7 @@ let rec eval (so : cool_value)    (* self object *)
                     let str = List.assoc loc s in
                     begin match str with
                     | Cool_String(str_lit, strlen) -> 
-                            printf "%s" (fuck str_lit);
+                            printf "%s" (str_format str_lit);
                     so, s
                     | _ -> failwith "Bad out_string"
                     end
@@ -548,15 +546,6 @@ let rec eval (so : cool_value)    (* self object *)
 
             | _ -> failwith ("Unimplemented internal " ^ fname)
             end
-    | (_,_,Minus(e1,e2)) -> 
-            let v1, s2 = eval so s e e1 in
-            let v2, s3 = eval so s2 e e2 in
-            let result_value = match v1, v2 with
-            | Cool_Int(i1), Cool_Int(i2) -> 
-                    Cool_Int(Int32.sub i1 i2)
-            | _,_ -> failwith "Bad minus"
-            in
-            result_value, s3
     | (_,_,Plus(e1,e2)) -> 
             let v1, s2 = eval so s e e1 in
             let v2, s3 = eval so s2 e e2 in
@@ -564,6 +553,15 @@ let rec eval (so : cool_value)    (* self object *)
             | Cool_Int(i1), Cool_Int(i2) -> 
                     Cool_Int(Int32.add i1 i2)
             | _,_ -> failwith "Bad plus"
+            in
+            result_value, s3
+    | (_,_,Minus(e1,e2)) -> 
+            let v1, s2 = eval so s e e1 in
+            let v2, s3 = eval so s2 e e2 in
+            let result_value = match v1, v2 with
+            | Cool_Int(i1), Cool_Int(i2) -> 
+                    Cool_Int(Int32.sub i1 i2)
+            | _,_ -> failwith "Bad minus"
             in
             result_value, s3
     (*class_map = (string * ((string * string * exp) list)) list*)
@@ -629,29 +627,30 @@ let rec eval (so : cool_value)    (* self object *)
     | _ -> failwith ( sprintf "Unhandled expr type %s" (exp_to_str expr))
     (*TODO Find out why this ^ is "unused"*)
 (*
-| Assign of string * exp
-| Bool of bool
+Assign of string * exp
+Block
+Bool of bool
 | Case of exp * ((string * string * exp) list)
-| Dispatch of (exp option) * string * (exp list)
-| Divide of exp * exp
+Dispatch of (exp option) * string * (exp list)
+Divide of exp * exp
 | Eq of exp * exp
-| If of exp * exp * exp
-| Integer of Int32.t
-| Internal of string (*Object.copy &c.*)
+If of exp * exp * exp
+Integer of Int32.t
+- Internal of string (*Object.copy &c.*)
 | Isvoid of exp
 | Le of exp * exp
         (*id        type     assign?            body*)
 | Let of (string * string * (exp option)) list * exp
 | Loop of exp * exp
 | Lt of exp * exp
-| Minus of exp * exp
+Minus of exp * exp
 | Neg of exp
 | New of string
 | Not of exp
 | Plus of exp * exp
 | Self
 | Static of exp * string * string * (exp list)
-| String of string
+String of string
 Times of exp * exp
 Variable of string
 *)
