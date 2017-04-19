@@ -1,58 +1,6 @@
 open Printf
+open Typedefs
 
-(**********************)
-(** Type Definitions **)
-(**********************)
-(*               cname       (name type initializer?) list *)
-type class_map = (string * ( (string * string * exp option) list)) list
-and exp = string * string * exp_kind
-and exp_kind =
-    | Assign of string * exp
-    | Bool of bool
-            (*e0      id       type     do*)
-    | Block of exp list
-    | Case of exp * ((string * string * exp) list)
-    | Dispatch of (exp option) * string * (exp list)
-    | Divide of exp * exp
-    | Eq of exp * exp
-    | If of exp * exp * exp
-    | Integer of Int32.t
-    | Internal of string (*Object.copy &c.*)
-    | Isvoid of exp
-    | Le of exp * exp
-            (*id        type     assign?            body*)
-    | Let of (string * string * (exp option)) list * exp
-    | Loop of exp * exp
-    | Lt of exp * exp
-    | Minus of exp * exp
-    | New of string
-    | Neg of exp
-    | Not of exp
-    | Plus of exp * exp
-    | Self
-    | String of string
-    | Static of exp * string * string * (exp list)
-    | Times of exp * exp
-    | Variable of string
-
-type imp_map = 
-    (*cname,     mname*)
-    ( (string * string)
-    *
-    (*formal list,  body*)
-    ((string list) * exp) ) list
-
-type parent_map = (string * string) list
-type cool_address = int
-type cool_value =
-    | Cool_Int of Int32.t
-    | Cool_Bool of bool
-    | Cool_String of string * int
-    | Cool_Object of string * ((string * cool_address) list)
-    | Void
-
-type environment = (string * cool_address) list
-type store = (cool_address * cool_value) list
 let new_location_counter = ref 1000
 let newloc () =
     incr new_location_counter ;
@@ -71,12 +19,12 @@ let debug fmt=
 let rec exp_to_str expr =
     match expr with
     | (_,_,Assign(x, e)) -> sprintf "Assign(%s, %s)" x (exp_to_str e)
-    | (_,_,Bool(b)) -> sprintf "Bool(%b)" b
     | (_,_,Block(explist)) ->
             let exp_str = List.fold_left (fun acc elt ->
                 acc ^ ", " ^ (exp_to_str elt)
             ) "" explist in
             sprintf "Block([%s])" exp_str
+    | (_,_,Bool(b)) -> sprintf "Bool(%b)" b
     | (_,_,Case(e0, case_list)) ->
             let case_str = List.fold_left (fun acc elt ->
                 begin match elt with
@@ -100,17 +48,39 @@ let rec exp_to_str expr =
             (* "" (List.map (fun (_,_,e) -> e) args) in*)
             sprintf "Dispatch(%s, %s, [%s])" (exp_to_str obj) fname arg_str
     | (_,_,Divide(e1, e2)) -> sprintf "Divide(%s, %s)" (exp_to_str e1) (exp_to_str e2)
+    | (_,_,Eq(e1, e2)) -> sprintf "Eq(%s, %s)" (exp_to_str e1) (exp_to_str e2)
     | (_,_,If(a,b,c)) -> sprintf "If(%s,%s,%s)" (exp_to_str a) (exp_to_str b) (exp_to_str c)
     | (_,_,Integer(i)) -> sprintf "Integer(%ld)" i
     | (_,_,Internal(s)) -> sprintf "Internal(%s)" s
+    | (_,_,Isvoid(e)) -> sprintf "Isvoid(%s)" (exp_to_str e)
+    | (_,_,Le(e1, e2)) -> sprintf "Le(%s, %s)" (exp_to_str e1) (exp_to_str e2)
+    | (_,_,Let(bind_list, body)) ->
+            let bind_string = List.fold_left (fun acc elt ->
+                begin match elt with
+                | (name, tipe, None) -> acc ^ name ^ ":" ^ tipe ^ ", "
+                | (name, tipe, Some value) -> 
+                        acc ^ name ^ ":" ^ tipe ^ "<-" ^ (exp_to_str value) ^ ", "
+                end
+            ) "" bind_list in
+            sprintf "Let([%s], %s" bind_string (exp_to_str body)
+    | (_,_,Loop(e1, e2)) -> sprintf "Loop(%s, %s)" (exp_to_str e1) (exp_to_str e2)
+    | (_,_,Lt(e1, e2)) -> sprintf "Lt(%s, %s)" (exp_to_str e1) (exp_to_str e2)
     | (_,_,Minus(e1, e2)) -> sprintf "Minus(%s, %s)" (exp_to_str e1) (exp_to_str e2)
+    | (_,_,Neg(e1)) -> sprintf "Neg(%s)" (exp_to_str e1)
     | (_,_,New(s)) -> sprintf "New(%s)" s
+    | (_,_,Not(e1)) -> sprintf "Not(%s)" (exp_to_str e1)
     | (_,_,Plus(e1, e2)) -> sprintf "Plus(%s, %s)" (exp_to_str e1) (exp_to_str e2)
     | (_,_,Self) -> sprintf "Self"
     | (_,_,String(s)) -> sprintf "String(\"%s\")" s
+    | (_,_,Static(caller, at_type, mname, args)) ->
+            let arg_str = List.fold_left (fun acc elt ->
+                acc ^ ", " ^ (exp_to_str elt)
+            ) "" args in
+            (* "" (List.map (fun (_,_,e) -> e) args) in*)
+            sprintf "Static(%s, %s, %s, [%s])" (exp_to_str caller) at_type mname arg_str
     | (_,_,Times(e1, e2)) -> sprintf "Times(%s, %s)" (exp_to_str e1) (exp_to_str e2)
     | (_,_,Variable(x)) -> sprintf "Variable(%s)" x
-    | x -> failwith("No to string for expression ")
+    | _ -> failwith("No to string for expression")
 
 let value_to_str v =
     match v with
@@ -140,181 +110,10 @@ let indent_count = ref 0
 let debug_indent () =
     debug "%s" (String.make !indent_count ' ')
 
-(**********************)
-(** De-serialization **)
-(**********************)
 
-let lnum = ref 0
-let fname = Sys.argv.(1)
-let fin = open_in fname
-let read () =
-    lnum := (!lnum) + 1;
-    input_line fin (*fix for \r\n*)
-
-let rec range k =
-    if k <= 0 then []
-    else k :: (range (k-1))
-
-let read_list worker =
-    let temp = read() in
-(*    printf "%s::%d\n" temp !lnum ;*)
-    let k = int_of_string (temp(*read()*)) in
-    let lst = range k in
-    List.map (fun _ -> worker () ) lst
-
-let read_list_arg worker arg=
-    let temp = read() in
-(*    printf "%s::%d\n" temp !lnum ;*)
-    let k = int_of_string (temp(*read()*)) in
-    let lst = range k in
-    List.map (fun _ -> worker arg ) lst
-
-(*read class map*)
-let rec read_class_map () =
-    read() ;
-    read_list read_attrib_class
-
-(*read implementation map*)
-and read_imp_map () =
-    read() ;
-    List.flatten (read_list read_imp_class)
-
-(*read parent map*)
-and read_parent_map () =
-    read() ;
-    read_list read_sub_super
-
-and read_sub_super ()=
-    let sub = read() in
-    let super = read() in
-    (sub, super)
-
-and read_imp_class ()= 
-    let cname = read() in
-    (*printf "imp cname: %s @%d\n" cname !lnum;*)
-    let cm_list = read_list_arg read_cool_method cname in
-    cm_list
-
-(* Passed name is the class we're currently reading*)
-and read_cool_method passed_name =
-    let mname = read() in
-    (*printf "cool_method mname: %s@%d\n" mname !lnum;*)
-    let flist = read_list read in
-    (*Toss out defining class, since we have the body*)
-    let _ = read() in
-    (*printf "cool_method def_class: %s@%d\n" def_class !lnum;*)
-    let expr = read_exp () in
-
-    ((passed_name, mname), (flist, expr))
-    (*(mname, flist, def_class, expr)*)
-
-and read_attrib () = match read() with
-    | "no_initializer" ->
-        let aname = read() in
-        let atype = read() in
-        (aname, atype, None)
-    | "initializer" ->
-        let aname = read() in
-        let atype = read() in
-        let expr = read_exp() in
-        (aname, atype, Some expr)
-    | x -> failwith ("Bad attribute kind: " ^x)
-
-and read_attrib_class () =
-    let cname = read () in
-    let attrib_list = read_list read_attrib in
-    (cname, attrib_list)
-
-and read_exp () =
-    let loc = read() in
-(*    printf "exp loc: %s@%d\n" loc !lnum;*)
-    let c_type = read() in
-(*    printf "exp type: %s@%d\n" c_type !lnum;*)
-    let ekind = read() in
-(*    printf "exp kind: %s@%d\n" ekind !lnum;*)
-    match ekind (*read()*) with
-        | "assign" ->
-                let _ = read() in
-                let var = read() in
-(*                printf "assign var: %s@%d\n" var !lnum;*)
-                let init = read_exp() in
-                (loc, c_type, Assign(var, init))
-        | "block" ->
-                let exp_list = read_list read_exp in
-                (loc, c_type, Block exp_list)
-        | "divide" ->
-                let e1 = read_exp () in
-                let e2 = read_exp () in
-                (loc, c_type, Divide(e1,e2))
-        | "dynamic_dispatch" ->
-                let e0 = read_exp() in
-                let _ = read() in
-                let mname = read() in
-                let arglist = read_list read_exp in
-                (loc, c_type, Dispatch(Some e0, mname, arglist))
-(*        | "eq"*)
-(*        | "false"*)
-        | "identifier" ->
-                (*TODO Why is there a lino here?*)
-                let _ = read() in
-                let vname = read() in
-                (loc, c_type, Variable vname)
-        | "internal" ->
-                let internal_str = read() in
-                (loc, c_type, Internal internal_str)
-        | "if" ->
-                let pred = read_exp() in
-                let tr = read_exp() in
-                let fl = read_exp() in
-                (loc, c_type, If(pred, tr, fl))
-        | "integer" -> 
-                let temp = read() in
-                (*printf "%s%d\n" temp !lnum;*)
-                let ival = Int32.of_string (temp(*read ()*)) in
-                (loc, c_type, Integer ival)
-        | "isvoid" ->
-                let e = read_exp() in
-                (loc, c_type, Isvoid(e))
-(*        | "le"*)
-(*        | "lt"*)
-        | "minus" ->
-                let e1 = read_exp () in
-                let e2 = read_exp () in
-                (loc, c_type, Minus(e1,e2))
-(*        | "negate"*)
-        | "new" ->
-                (*TODO now I'm worrying I'm not handling 
-                 * linenos correctly*)
-                let _ = read() in
-                let ntype = read() in
-                (loc, c_type, New ntype)
-(*        | "not"*)
-        | "plus" ->
-                let e1 = read_exp () in
-                let e2 = read_exp () in
-                (loc, c_type, Plus(e1,e2))
-        | "self_dispatch" ->
-                let _ = read() in
-                let mname = read() in
-                let arglist = read_list read_exp in
-                (loc, c_type, Dispatch(None, mname, arglist))
-(*        | "static_dispatch"*)
-        | "string" ->
-                let sval = read() in
-                (loc, c_type, String sval)
-        | "times" ->
-                let e1 = read_exp () in
-                let e2 = read_exp () in
-                (loc, c_type, Times(e1,e2))
-        | "true" ->
-                (loc, c_type, Bool(true))
-(*        | "while"*)
-        | x -> failwith ("Unhandled exp kind:: " ^ x)
-
-let cm = read_class_map ()
-let im = read_imp_map ()
-let pm = read_parent_map ();;
-close_in fin ;;
+let cm = Deserialize.read_class_map ()
+let im = Deserialize.read_imp_map ()
+let pm = Deserialize.read_parent_map ();;
 
 (****************)
 (** Evaluation **)
@@ -368,13 +167,15 @@ let rec eval (so : cool_value)    (* self object *)
             final_pair
     | (_,_, Bool(b)) -> Cool_Bool(b), s
     | (loc,_, Dispatch(None, fname, args)) ->
+            (*TODO: route to Dispatch(so,fname,args)?
+             * What about stack overflow?*)
             let current_store = ref s in
             let arg_values = List.map (fun arg_exp ->
                 let arg_value, new_store = eval so !current_store e arg_exp in
                 current_store := new_store;
                 arg_value
             ) args in
-            (*No e0 to evaluate so we continue with v0:=so*)
+            (*No e0 to evaluate so we continue with v0=so*)
             let s_n2 = !current_store in
             let v0 = so in
             begin match v0 with
@@ -483,12 +284,49 @@ let rec eval (so : cool_value)    (* self object *)
             let v1, s2 = eval so s e e1 in
             let v2, s3 = eval so s2 e e2 in
             let result_value = match v1, v2 with
-            | _, Cool_Int(0l) -> (*XXX*) err loc "division by zero"
+            | _, Cool_Int(0l) -> err loc "division by zero"
             | Cool_Int(i1), Cool_Int(i2) -> 
                     Cool_Int(Int32.div i1 i2)
             | _,_ -> failwith "Bad divide"
             in
             result_value, s3
+    | (_,_,Eq(e1, e2)) ->
+        let v0, s2 = eval so s e e1 in
+        let v1, s3 = eval so s2 e e2 in
+        begin match v0, v1 with
+        | Void, Void -> Cool_Bool(true), s3
+        | Cool_Int(i1), Cool_Int(i2) -> 
+                if ((Int32.sub i1 i2) = Int32.zero) then
+                    Cool_Bool(true), s3
+                else
+                    Cool_Bool(false), s3
+        | Cool_Bool(b1), Cool_Bool(b2) ->
+                if (b1 = b2) then
+                    Cool_Bool(true), s3
+                else
+                    Cool_Bool(false), s3
+        | Cool_String(s1, l1), Cool_String(s2, l2) ->
+                if (s1 = s2) then
+                    Cool_Bool(true), s3
+                else
+                    Cool_Bool(false), s3
+        | Cool_Object(cname1, attr_locs1), Cool_Object(cname2, attr_locs2) ->
+                let obj1 = Cool_Object(cname1, attr_locs1) in
+                let obj2 = Cool_Object(cname2, attr_locs2) in
+                let inverse_s3 = List.map (fun elem ->
+                    begin match elem with
+                    | (loc, value) -> (value, loc)
+                    end
+                ) s3 in
+                let addr1 = List.assoc obj1 inverse_s3 in
+                let addr2 = List.assoc obj2 inverse_s3 in
+                if (addr1 = addr2) then
+                    Cool_Bool(true), s3
+                else
+                    Cool_Bool(false), s3
+        | _ -> Cool_Bool(false), s3
+        end
+
     | (_,_,If(pred, thn, els)) ->
             let v1, s2 = eval so s e pred in
             begin match v1 with
@@ -529,11 +367,10 @@ let rec eval (so : cool_value)    (* self object *)
                     | Cool_Int(_) ->
                             let str = Cool_String("Int", 3) in
                             str, s
-                    | _ -> failwith "Some class without name"
-                    (*
-                            let str = Cool_Int("Int", 3) in
+                    | Cool_String(_) ->
+                            let str = Cool_String("String", 6) in
                             str, s
-                            *)
+                    | _ -> failwith "Some class without name"
                     end
             | "String.length" ->
                     begin match so with
@@ -542,9 +379,14 @@ let rec eval (so : cool_value)    (* self object *)
                             Cool_Int(len32), s
                     | _ -> failwith "String.length called from non-string"
                     end
-
-
+            (*TODO: IO.in_int/in_string, Object.copy/abort String.substr*)
             | _ -> failwith ("Unimplemented internal " ^ fname)
+            end
+    | (_,_,Isvoid(e1)) ->
+            let v0, s2 = eval so s e e1 in
+            begin match v0 with
+            | Void -> Cool_Bool(true), s2
+            | _ -> Cool_Bool(false), s2
             end
     | (_,_,Plus(e1,e2)) -> 
             let v1, s2 = eval so s e e1 in
@@ -558,14 +400,32 @@ let rec eval (so : cool_value)    (* self object *)
     | (_,_,Minus(e1,e2)) -> 
             let v1, s2 = eval so s e e1 in
             let v2, s3 = eval so s2 e e2 in
-            let result_value = match v1, v2 with
-            | Cool_Int(i1), Cool_Int(i2) -> 
-                    Cool_Int(Int32.sub i1 i2)
-            | _,_ -> failwith "Bad minus"
+            let result_value = 
+                begin match v1, v2 with
+                | Cool_Int(i1), Cool_Int(i2) -> 
+                        Cool_Int(Int32.sub i1 i2)
+                | _,_ -> failwith "Bad minus"
+                end
             in
             result_value, s3
-    (*class_map = (string * ((string * string * exp) list)) list*)
-    | (_,_, New("SELF_TYPE")) -> failwith "implement New S_T"
+    | (_,_, Neg(e1)) ->
+            let v1, s2 = eval so s e e1 in
+            let result =
+                begin match v1 with
+                | Cool_Int(i) -> Cool_Int(Int32.neg i)
+                | _ -> failwith "Non-integral negation"
+                end
+            in
+            result, s2
+    | (loc, etype, New("SELF_TYPE")) -> failwith "implement New S_T"
+            (*
+            begin match so with ->
+            | Cool_Object(cname, _) ->
+                    let newexp = (loc, etype, New(cname)) in
+                    eval so s e newexp
+            | _ -> failwith "Non-object SELF_TYPE -- I don't think this can happen"
+            end
+            *)
     | (_,_, New(cname)) ->
             (* Get attributes and initializers*)
             let attrs_and_inits = List.assoc cname cm in
@@ -611,6 +471,14 @@ let rec eval (so : cool_value)    (* self object *)
                 updated_store
             ) s2 initialized_attribs in
             v1, final_store
+    | (_,_, Not(e1)) ->
+            let v1, s2 = eval so s e e1 in
+            begin match v1 with
+            | Cool_Bool(false) -> Cool_Bool(true), s2
+            | Cool_Bool(true) -> Cool_Bool(false), s2
+            | _ -> failwith "Non-bool 'not'"
+            end
+    | (_,_,Self) -> so, s
     | (_,_,String(str)) -> Cool_String(str, String.length str), s
     | (_,_,Times(e1,e2)) -> 
             let v1, s2 = eval so s e e1 in
@@ -627,32 +495,15 @@ let rec eval (so : cool_value)    (* self object *)
     | _ -> failwith ( sprintf "Unhandled expr type %s" (exp_to_str expr))
     (*TODO Find out why this ^ is "unused"*)
 (*
-Assign of string * exp
-Block
-Bool of bool
 | Case of exp * ((string * string * exp) list)
-Dispatch of (exp option) * string * (exp list)
-Divide of exp * exp
-| Eq of exp * exp
-If of exp * exp * exp
-Integer of Int32.t
 - Internal of string (*Object.copy &c.*)
-| Isvoid of exp
 | Le of exp * exp
         (*id        type     assign?            body*)
 | Let of (string * string * (exp option)) list * exp
 | Loop of exp * exp
 | Lt of exp * exp
-Minus of exp * exp
-| Neg of exp
-| New of string
-| Not of exp
-| Plus of exp * exp
-| Self
+- New of string
 | Static of exp * string * string * (exp list)
-String of string
-Times of exp * exp
-Variable of string
 *)
     in
     debug_indent(); debug "+++++++++++\n";
