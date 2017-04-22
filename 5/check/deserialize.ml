@@ -112,8 +112,11 @@ and read_exp () =
                 let mname = read() in
                 let arglist = read_list read_exp in
                 (loc, c_type, Dispatch(Some e0, mname, arglist))
-(*        | "eq"*)
-(*        | "false"*)
+        | "eq" ->
+                let e0 = read_exp() in
+                let e1 = read_exp() in
+                (loc, c_type, Eq(e0, e1))
+        | "false" -> (loc, c_type, Bool(false))
         | "identifier" ->
                 (*TODO Why is there a lino here?*)
                 let _ = read() in
@@ -135,20 +138,30 @@ and read_exp () =
         | "isvoid" ->
                 let e = read_exp() in
                 (loc, c_type, Isvoid(e))
-(*        | "le"*)
-(*        | "lt"*)
+        | "le" ->
+                let e1 = read_exp () in
+                let e2 = read_exp () in
+                (loc, c_type, Le(e1, e2))
+        | "lt" ->
+                let e1 = read_exp () in
+                let e2 = read_exp () in
+                (loc, c_type, Lt(e1, e2))
         | "minus" ->
                 let e1 = read_exp () in
                 let e2 = read_exp () in
                 (loc, c_type, Minus(e1,e2))
-(*        | "negate"*)
+        | "negate" ->
+                let expression = read_exp () in
+                (loc, c_type, Neg(expression))
         | "new" ->
                 (*TODO now I'm worrying I'm not handling 
                  * linenos correctly*)
                 let _ = read() in
                 let ntype = read() in
                 (loc, c_type, New ntype)
-(*        | "not"*)
+        | "not" ->
+                let expression = read_exp () in
+                (loc, c_type, Not(expression))
         | "plus" ->
                 let e1 = read_exp () in
                 let e2 = read_exp () in
@@ -158,7 +171,14 @@ and read_exp () =
                 let mname = read() in
                 let arglist = read_list read_exp in
                 (loc, c_type, Dispatch(None, mname, arglist))
-(*        | "static_dispatch"*)
+        | "static_dispatch" ->
+                let e0 = read_exp() in
+                let _ = read () in
+                let static_class = read () in
+                let _ = read () in
+                let mname = read() in
+                let arglist = read_list read_exp in
+                (loc, c_type, Static(e0, static_class, mname, arglist))
         | "string" ->
                 let sval = read() in
                 (loc, c_type, String sval)
@@ -166,8 +186,10 @@ and read_exp () =
                 let e1 = read_exp () in
                 let e2 = read_exp () in
                 (loc, c_type, Times(e1,e2))
-        | "true" ->
-                (loc, c_type, Bool(true))
-(*        | "while"*)
+        | "true" -> (loc, c_type, Bool(true))
+        | "while" ->
+                let e1 = read_exp () in
+                let e2 = read_exp () in
+                (loc, c_type, Loop(e1, e2))
         | x -> failwith ("Unhandled exp kind:: " ^ x)
 
