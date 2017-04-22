@@ -80,7 +80,6 @@ let rec exp_to_str expr =
             sprintf "Static(%s, %s, %s, [%s])" (exp_to_str caller) at_type mname arg_str
     | (_,_,Times(e1, e2)) -> sprintf "Times(%s, %s)" (exp_to_str e1) (exp_to_str e2)
     | (_,_,Variable(x)) -> sprintf "Variable(%s)" x
-    | _ -> failwith("No to string for expression")
 
 let value_to_str v =
     match v with
@@ -295,21 +294,9 @@ let rec eval (so : cool_value)    (* self object *)
         let v1, s3 = eval so s2 e e2 in
         begin match v0, v1 with
         | Void, Void -> Cool_Bool(true), s3
-        | Cool_Int(i1), Cool_Int(i2) -> 
-                if ((Int32.sub i1 i2) = Int32.zero) then
-                    Cool_Bool(true), s3
-                else
-                    Cool_Bool(false), s3
-        | Cool_Bool(b1), Cool_Bool(b2) ->
-                if (b1 = b2) then
-                    Cool_Bool(true), s3
-                else
-                    Cool_Bool(false), s3
-        | Cool_String(s1, l1), Cool_String(s2, l2) ->
-                if (s1 = s2) then
-                    Cool_Bool(true), s3
-                else
-                    Cool_Bool(false), s3
+        | Cool_Int(i1), Cool_Int(i2) -> Cool_Bool((Int32.sub i1 i2) = Int32.zero), s3
+        | Cool_Bool(b1), Cool_Bool(b2) -> Cool_Bool(b1 = b2), s3
+        | Cool_String(s1, l1), Cool_String(s2, l2) -> Cool_Bool(s1 = s2), s3
         | Cool_Object(cname1, attr_locs1), Cool_Object(cname2, attr_locs2) ->
                 let obj1 = Cool_Object(cname1, attr_locs1) in
                 let obj2 = Cool_Object(cname2, attr_locs2) in
@@ -320,13 +307,9 @@ let rec eval (so : cool_value)    (* self object *)
                 ) s3 in
                 let addr1 = List.assoc obj1 inverse_s3 in
                 let addr2 = List.assoc obj2 inverse_s3 in
-                if (addr1 = addr2) then
-                    Cool_Bool(true), s3
-                else
-                    Cool_Bool(false), s3
+                Cool_Bool(addr1 = addr2), s3
         | _ -> Cool_Bool(false), s3
         end
-
     | (_,_,If(pred, thn, els)) ->
             let v1, s2 = eval so s e pred in
             begin match v1 with
@@ -337,8 +320,13 @@ let rec eval (so : cool_value)    (* self object *)
             | _ -> failwith "Non-bool predicate"
             end
     | (_,_,Integer(i)) -> Cool_Int(i), s
-    | (_,_, Internal(fname)) -> 
+    | (lineno,_, Internal(fname)) -> 
             begin match fname with
+            (*
+            | "IO.in_string" ->
+                    let oc_str = read_line () in
+                    let len = String.length
+                    *)
             | "IO.out_string" ->
                     let loc = List.assoc "x" e in
                     let str = List.assoc loc s in
@@ -372,6 +360,11 @@ let rec eval (so : cool_value)    (* self object *)
                             str, s
                     | _ -> failwith "Some class without name"
                     end
+            | "Object.abort" ->
+                    let abort = "abort" in
+                    printf "%s\n" abort;
+                    exit 0
+                    Void, s
             | "String.length" ->
                     begin match so with
                     | Cool_String(_,len) ->
@@ -379,9 +372,26 @@ let rec eval (so : cool_value)    (* self object *)
                             Cool_Int(len32), s
                     | _ -> failwith "String.length called from non-string"
                     end
-            (*TODO: IO.in_int/in_string, Object.copy/abort String.substr*)
+            | "String.substr" ->
+                    begin match so with
+                    | Cool_String(str, len) ->
+                            let ci1 = (List.assoc (List.assoc "i" e) s) in
+                            let ci2 = (List.assoc (List.assoc "l" e) s) in
+                            begin match ci1, ci2 with
+                            | Cool_Int(li1), Cool_Int(li2) ->
+                                    let i1 = int_of_string (Int32.to_string li1) in
+                                    let i2 = int_of_string (Int32.to_string li2) in
+                                        if (i1 + i2 > len) then
+                                            err lineno "substring out of bounds"
+                                        else
+                                            Cool_String (String.sub str i1 i2, i2), s
+                            | _ -> failwith "Non-int arg to substr"
+                            end
+                    | _ -> failwith "String.length called from non-string"
+                    end
             | _ -> failwith ("Unimplemented internal " ^ fname)
             end
+            (*TODO: IO.in_int/in_string*)
     | (_,_,Isvoid(e1)) ->
             let v0, s2 = eval so s e e1 in
             begin match v0 with
@@ -397,6 +407,46 @@ let rec eval (so : cool_value)    (* self object *)
             | _,_ -> failwith "Bad plus"
             in
             result_value, s3
+    | (_,_,Le(e1,e2)) ->
+            let v1, s2 = eval so s e e1 in
+            let v2, s3 = eval so s2 e e2 in
+            begin match v1, v2 with
+            | Void, Void -> Cool_Bool(true), s3
+            | Cool_Int(i1), Cool_Int(i2) -> Cool_Bool(i1 <= i2), s3
+            | Cool_String(s1,l1), Cool_String(s2,l2) -> Cool_Bool(s1 <= s2), s3
+            | Cool_Bool(b1), Cool_Bool(b2) -> Cool_Bool(b1 <= b2), s3
+            | Cool_Object(cname1, attr_locs1), Cool_Object(cname2, attr_locs2) ->
+                    let obj1 = Cool_Object(cname1, attr_locs1) in
+                    let obj2 = Cool_Object(cname2, attr_locs2) in
+                    let inverse_s3 = List.map (fun elem ->
+                        begin match elem with
+                        | (loc, value) -> (value, loc)
+                        end
+                    ) s3 in
+                    let addr1 = List.assoc obj1 inverse_s3 in
+                    let addr2 = List.assoc obj2 inverse_s3 in
+                    Cool_Bool(addr1 = addr2), s3
+            | _ -> Cool_Bool(false), s3
+            end
+    | (loc, etype, Loop(pred, body)) ->
+            let v0, s1 = eval so s e pred in
+            begin match v0 with
+            | Cool_Bool(false) -> Void, s1
+            | Cool_Bool(true) ->
+                    let v1, s2 = eval so s1 e body in
+                    let newexpr = (loc, etype, Loop(pred, body)) in
+                    eval so s2 e newexpr
+            | _ -> failwith "Non-bool loop predicate"
+            end
+    | (_,_,Lt(e1,e2)) ->
+            let v1, s2 = eval so s e e1 in
+            let v2, s3 = eval so s2 e e2 in
+            begin match v1, v2 with
+            | Cool_Int(i1), Cool_Int(i2) -> Cool_Bool(i1 < i2), s3
+            | Cool_String(s1,l1), Cool_String(s2,l2) -> Cool_Bool(s1 < s2), s3
+            | Cool_Bool(b1), Cool_Bool(b2) -> Cool_Bool(b1 < b2), s3
+            | _ -> Cool_Bool(false), s3
+            end
     | (_,_,Minus(e1,e2)) -> 
             let v1, s2 = eval so s e e1 in
             let v2, s3 = eval so s2 e e2 in
@@ -410,22 +460,17 @@ let rec eval (so : cool_value)    (* self object *)
             result_value, s3
     | (_,_, Neg(e1)) ->
             let v1, s2 = eval so s e e1 in
-            let result =
-                begin match v1 with
-                | Cool_Int(i) -> Cool_Int(Int32.neg i)
-                | _ -> failwith "Non-integral negation"
-                end
-            in
-            result, s2
-    | (loc, etype, New("SELF_TYPE")) -> failwith "implement New S_T"
-            (*
-            begin match so with ->
+            begin match v1 with
+            | Cool_Int(i) -> Cool_Int(Int32.neg i), s2
+            | _ -> failwith "Non-integral negation"
+            end
+    | (loc, etype, New("SELF_TYPE")) ->
+            begin match so with
             | Cool_Object(cname, _) ->
                     let newexp = (loc, etype, New(cname)) in
                     eval so s e newexp
             | _ -> failwith "Non-object SELF_TYPE -- I don't think this can happen"
             end
-            *)
     | (_,_, New(cname)) ->
             (* Get attributes and initializers*)
             let attrs_and_inits = List.assoc cname cm in
@@ -479,6 +524,62 @@ let rec eval (so : cool_value)    (* self object *)
             | _ -> failwith "Non-bool 'not'"
             end
     | (_,_,Self) -> so, s
+    | (loc,_,Static(caller, stat, fname, args)) ->
+            let current_store = ref s in
+            let arg_values = List.map (fun arg_exp ->
+                let arg_value, new_store = eval so !current_store e arg_exp in
+                current_store := new_store;
+                arg_value
+            ) args in
+            let v0, s_n2 = eval so !current_store e caller in
+            begin match v0 with
+
+            | Void -> err loc "dispatch on void"
+
+            | Cool_Object (x, attrs_and_locs) ->
+                    let formals, body = List.assoc (stat, fname) im in
+                    let new_arg_locs = List.map (fun arg_exp ->
+                        newloc()
+                    ) args in
+                    let formals_and_locs = List.combine formals new_arg_locs in
+                    let store_update = List.combine new_arg_locs arg_values in
+                    let s_n3 = store_update @ s_n2 in
+                    let inner_env = formals_and_locs @ attrs_and_locs in
+                    eval v0 s_n3 inner_env body
+
+            | Cool_String(_,_) ->
+                    let formals, body = List.assoc (stat, fname) im in
+                    let new_arg_locs = List.map (fun arg_exp ->
+                        newloc()
+                    ) args in
+                    let formals_and_locs = List.combine formals new_arg_locs in
+                    let store_update = List.combine new_arg_locs arg_values in
+                    let s_n3 = store_update @ s_n2 in
+                    let inner_env = formals_and_locs in
+                    eval v0 s_n3 inner_env body
+
+            | Cool_Bool(_) ->
+                    let formals, body = List.assoc (stat, fname) im in
+                    let new_arg_locs = List.map (fun arg_exp ->
+                        newloc()
+                    ) args in
+                    let formals_and_locs = List.combine formals new_arg_locs in
+                    let store_update = List.combine new_arg_locs arg_values in
+                    let s_n3 = store_update @ s_n2 in
+                    let inner_env = formals_and_locs in
+                    eval v0 s_n3 inner_env body
+
+            | Cool_Int(_) ->
+                    let formals, body = List.assoc (stat, fname) im in
+                    let new_arg_locs = List.map (fun arg_exp ->
+                        newloc()
+                    ) args in
+                    let formals_and_locs = List.combine formals new_arg_locs in
+                    let store_update = List.combine new_arg_locs arg_values in
+                    let s_n3 = store_update @ s_n2 in
+                    let inner_env = formals_and_locs in
+                    eval v0 s_n3 inner_env body
+            end
     | (_,_,String(str)) -> Cool_String(str, String.length str), s
     | (_,_,Times(e1,e2)) -> 
             let v1, s2 = eval so s e e1 in
@@ -497,13 +598,7 @@ let rec eval (so : cool_value)    (* self object *)
 (*
 | Case of exp * ((string * string * exp) list)
 - Internal of string (*Object.copy &c.*)
-| Le of exp * exp
-        (*id        type     assign?            body*)
 | Let of (string * string * (exp option)) list * exp
-| Loop of exp * exp
-| Lt of exp * exp
-- New of string
-| Static of exp * string * string * (exp list)
 *)
     in
     debug_indent(); debug "+++++++++++\n";
