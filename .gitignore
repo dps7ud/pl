@@ -26,3 +26,5 @@
 # archives
 *.gz
 
+# test results file
+interp_errors.txt
