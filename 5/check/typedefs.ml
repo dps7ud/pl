@@ -13,7 +13,7 @@ and exp_kind =
     | Internal of string (*Object.copy &c.*)
     | Isvoid of exp
     | Le of exp * exp
-            (*id        type     assign?            body*)
+             (*id      type     assign?             body*)
     | Let of (string * string * (exp option)) list * exp
     | Loop of exp * exp
     | Lt of exp * exp
