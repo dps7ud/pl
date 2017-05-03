@@ -386,6 +386,9 @@ let rec eval (so : cool_value)    (* self object *)
             | Cool_Int(i1), Cool_Int(i2) -> Cool_Bool(i1 <= i2), s3
             | Cool_String(s1,l1), Cool_String(s2,l2) -> Cool_Bool(s1 <= s2), s3
             | Cool_Bool(b1), Cool_Bool(b2) -> Cool_Bool(b1 <= b2), s3
+            | v1, v2 -> Cool_Bool(v1 == v2), s3
+
+                    (*
             | Cool_Object(cname1, attr_locs1), Cool_Object(cname2, attr_locs2) ->
                     let obj1 = Cool_Object(cname1, attr_locs1) in
                     let obj2 = Cool_Object(cname2, attr_locs2) in
@@ -397,7 +400,7 @@ let rec eval (so : cool_value)    (* self object *)
                     let addr1 = List.assoc obj1 inverse_s3 in
                     let addr2 = List.assoc obj2 inverse_s3 in
                     Cool_Bool(addr1 = addr2), s3
-            | _ -> Cool_Bool(false), s3
+                    *)
             end
              (*id      type     assign?             body*)
 (*  | Let of (string * string * (exp option)) list * exp*)
@@ -435,6 +438,7 @@ let rec eval (so : cool_value)    (* self object *)
                     eval so s2 e newexpr
             | _ -> failwith "Non-bool loop predicate"
             end
+
     | (_,_,Lt(e1,e2)) ->
             let v1, s2 = eval so s e e1 in
             let v2, s3 = eval so s2 e e2 in
