@@ -138,6 +138,13 @@ let err linum msg =
     printf "ERROR: %s: Exception: %s\n" linum msg;
     exit 1
 
+let get_default type_str =
+    match type_str with
+    | "Int" -> Cool_Int(0l)
+    | "String" -> Cool_String("",0)
+    | "Bool" -> Cool_Bool(false)
+    | _ -> Void
+
 let rec eval (so : cool_value)    (* self object *)
              (s : store)          (* _the_ store *)
              (e : environment)    (* _the_ environment *)
@@ -165,75 +172,19 @@ let rec eval (so : cool_value)    (* self object *)
             ) (Void, s) exp_list in
             final_pair
     | (_,_, Bool(b)) -> Cool_Bool(b), s
-    | (loc,_, Dispatch(None, fname, args)) ->
-            (*TODO: route to Dispatch(so,fname,args)?
-             * What about stack overflow?*)
+    | (linno,_, Dispatch(e0, fname, args)) ->
             let current_store = ref s in
             let arg_values = List.map (fun arg_exp ->
                 let arg_value, new_store = eval so !current_store e arg_exp in
                 current_store := new_store;
                 arg_value
             ) args in
-            (*No e0 to evaluate so we continue with v0=so*)
-            let s_n2 = !current_store in
-            let v0 = so in
+            let v0, s_n2 = begin match e0 with
+            | Some e0 -> eval so !current_store e e0
+            | None -> so, !current_store
+            end in
             begin match v0 with
-            | Void -> err loc "dispatch on void"
-            | Cool_Object (x, attrs_and_locs) ->
-                    let formals, body = List.assoc (x, fname) im in
-                    let new_arg_locs = List.map (fun arg_exp ->
-                        newloc()
-                    ) args in
-                    let formals_and_locs = List.combine formals new_arg_locs in
-                    let store_update = List.combine new_arg_locs arg_values in
-                    let s_n3 = store_update @ s_n2 in
-                    let inner_env = formals_and_locs @ attrs_and_locs in
-                    eval v0 s_n3 inner_env body
-
-            | Cool_String(_,_) ->
-                    let formals, body = List.assoc ("String", fname) im in
-                    let new_arg_locs = List.map (fun arg_exp ->
-                        newloc()
-                    ) args in
-                    let formals_and_locs = List.combine formals new_arg_locs in
-                    let store_update = List.combine new_arg_locs arg_values in
-                    let s_n3 = store_update @ s_n2 in
-                    let inner_env = formals_and_locs in
-                    eval v0 s_n3 inner_env body
-
-            | Cool_Bool(_) ->
-                    let formals, body = List.assoc ("Bool", fname) im in
-                    let new_arg_locs = List.map (fun arg_exp ->
-                        newloc()
-                    ) args in
-                    let formals_and_locs = List.combine formals new_arg_locs in
-                    let store_update = List.combine new_arg_locs arg_values in
-                    let s_n3 = store_update @ s_n2 in
-                    let inner_env = formals_and_locs in
-                    eval v0 s_n3 inner_env body
-
-            | Cool_Int(_) ->
-                    let formals, body = List.assoc ("Int", fname) im in
-                    let new_arg_locs = List.map (fun arg_exp ->
-                        newloc()
-                    ) args in
-                    let formals_and_locs = List.combine formals new_arg_locs in
-                    let store_update = List.combine new_arg_locs arg_values in
-                    let s_n3 = store_update @ s_n2 in
-                    let inner_env = formals_and_locs in
-                    eval v0 s_n3 inner_env body
-            end
-    | (loc,_, Dispatch((Some e0), fname, args)) ->
-            let current_store = ref s in
-            let arg_values = List.map (fun arg_exp ->
-                let arg_value, new_store = eval so !current_store e arg_exp in
-                current_store := new_store;
-                arg_value
-            ) args in
-            let v0, s_n2 = eval so !current_store e e0 in
-            begin match v0 with
-
-            | Void -> err loc "dispatch on void"
+            | Void -> err linno "dispatch on void"
 
             | Cool_Object (x, attrs_and_locs) ->
                     let formals, body = List.assoc (x, fname) im in
@@ -279,11 +230,11 @@ let rec eval (so : cool_value)    (* self object *)
                     let inner_env = formals_and_locs in
                     eval v0 s_n3 inner_env body
             end
-    | (loc,_,Divide(e1,e2)) -> 
+    | (linno,_,Divide(e1,e2)) -> 
             let v1, s2 = eval so s e e1 in
             let v2, s3 = eval so s2 e e2 in
             let result_value = match v1, v2 with
-            | _, Cool_Int(0l) -> err loc "division by zero"
+            | _, Cool_Int(0l) -> err linno "division by zero"
             | Cool_Int(i1), Cool_Int(i2) -> 
                     Cool_Int(Int32.div i1 i2)
             | _,_ -> failwith "Bad divide"
@@ -292,11 +243,20 @@ let rec eval (so : cool_value)    (* self object *)
     | (_,_,Eq(e1, e2)) ->
         let v0, s2 = eval so s e e1 in
         let v1, s3 = eval so s2 e e2 in
+        Cool_Bool(v0 == v1), s3
+        (*
         begin match v0, v1 with
         | Void, Void -> Cool_Bool(true), s3
         | Cool_Int(i1), Cool_Int(i2) -> Cool_Bool((Int32.sub i1 i2) = Int32.zero), s3
         | Cool_Bool(b1), Cool_Bool(b2) -> Cool_Bool(b1 = b2), s3
         | Cool_String(s1, l1), Cool_String(s2, l2) -> Cool_Bool(s1 = s2), s3
+        | Cool_Object(cname1, attr_locs1), Cool_Object(cname2, attr_locs2) ->
+                let eq_val = Cool_Bool(
+                    Cool_Object(cname1, attr_locs1) == Cool_Object(cname2, attr_locs2)
+                    ) in
+                eq_val, s3
+                *)
+        (*
         | Cool_Object(cname1, attr_locs1), Cool_Object(cname2, attr_locs2) ->
                 let obj1 = Cool_Object(cname1, attr_locs1) in
                 let obj2 = Cool_Object(cname2, attr_locs2) in
@@ -310,6 +270,7 @@ let rec eval (so : cool_value)    (* self object *)
                 Cool_Bool(addr1 = addr2), s3
         | _ -> Cool_Bool(false), s3
         end
+                *)
     | (_,_,If(pred, thn, els)) ->
             let v1, s2 = eval so s e pred in
             begin match v1 with
@@ -324,8 +285,17 @@ let rec eval (so : cool_value)    (* self object *)
             begin match fname with
             (*
             | "IO.in_string" ->
-                    let oc_str = read_line () in
-                    let len = String.length
+                    let null_char = '\x00' in
+                    let oc_str =
+                        try
+                            let x = read_line () in
+                            x
+                        with 
+                            End_of_file -> "";
+                    if String.contains oc_str null_char then
+                        Cool_String("", 0), s
+                    else
+                        Cool_String(oc_str, String.length oc_str)
                     *)
             | "IO.out_string" ->
                     let loc = List.assoc "x" e in
@@ -363,8 +333,9 @@ let rec eval (so : cool_value)    (* self object *)
             | "Object.abort" ->
                     let abort = "abort" in
                     printf "%s\n" abort;
-                    exit 0
+                    exit 0;
                     Void, s
+
             | "String.length" ->
                     begin match so with
                     | Cool_String(_,len) ->
@@ -428,13 +399,39 @@ let rec eval (so : cool_value)    (* self object *)
                     Cool_Bool(addr1 = addr2), s3
             | _ -> Cool_Bool(false), s3
             end
-    | (loc, etype, Loop(pred, body)) ->
+             (*id      type     assign?             body*)
+(*  | Let of (string * string * (exp option)) list * exp*)
+    | (lino, etype, Let(binding_list, body)) ->
+            begin match binding_list with
+            | [] ->
+                    let body_val, bad_store = eval so s e body in
+                    body_val, bad_store
+            | _  ->
+                    let ident, bind_type, assign  = List.hd binding_list in
+                    let loc = newloc () in
+                    let s2 = [(loc, get_default bind_type)] @ s in
+                    let e2 = [(ident, loc)] @ e in
+                    begin match assign with
+                    | Some assign ->
+                            let v1, s3 = eval so s2 e2 assign in
+                            let s4 = (loc, v1) :: List.remove_assoc loc s3 in
+                            let new_expr = (lino, etype, Let(List.tl binding_list, body)) in
+                            let v2, s5 = eval so s4 e2 new_expr in
+                            v2, s
+                    | None ->
+                            let new_expr = (lino, etype, Let(List.tl binding_list, body)) in
+                            let v2, s5 = eval so s2 e2 new_expr in
+                            v2, s
+                    end
+            end
+
+    | (linno, etype, Loop(pred, body)) ->
             let v0, s1 = eval so s e pred in
             begin match v0 with
             | Cool_Bool(false) -> Void, s1
             | Cool_Bool(true) ->
                     let v1, s2 = eval so s1 e body in
-                    let newexpr = (loc, etype, Loop(pred, body)) in
+                    let newexpr = (linno, etype, Loop(pred, body)) in
                     eval so s2 e newexpr
             | _ -> failwith "Non-bool loop predicate"
             end
@@ -464,10 +461,10 @@ let rec eval (so : cool_value)    (* self object *)
             | Cool_Int(i) -> Cool_Int(Int32.neg i), s2
             | _ -> failwith "Non-integral negation"
             end
-    | (loc, etype, New("SELF_TYPE")) ->
+    | (linno, etype, New("SELF_TYPE")) ->
             begin match so with
             | Cool_Object(cname, _) ->
-                    let newexp = (loc, etype, New(cname)) in
+                    let newexp = (linno, etype, New(cname)) in
                     eval so s e newexp
             | _ -> failwith "Non-object SELF_TYPE -- I don't think this can happen"
             end
@@ -505,8 +502,6 @@ let rec eval (so : cool_value)    (* self object *)
                 | (_,_, None) -> false
                 | _ -> true
             ) attrs_and_inits in
-            (*TODO getting a warning about matching (_,_,None) but I thought
-             * I took care of this. Tests on uninitialized attributes seem to work.*)
             let final_store = List.fold_left (fun acc_store attr ->
                 match attr with
                 | (_,_,None) -> failwith "attribute without init"
@@ -524,7 +519,7 @@ let rec eval (so : cool_value)    (* self object *)
             | _ -> failwith "Non-bool 'not'"
             end
     | (_,_,Self) -> so, s
-    | (loc,_,Static(caller, stat, fname, args)) ->
+    | (linno,_,Static(caller, stat, fname, args)) ->
             let current_store = ref s in
             let arg_values = List.map (fun arg_exp ->
                 let arg_value, new_store = eval so !current_store e arg_exp in
@@ -534,7 +529,7 @@ let rec eval (so : cool_value)    (* self object *)
             let v0, s_n2 = eval so !current_store e caller in
             begin match v0 with
 
-            | Void -> err loc "dispatch on void"
+            | Void -> err linno "dispatch on void"
 
             | Cool_Object (x, attrs_and_locs) ->
                     let formals, body = List.assoc (stat, fname) im in
@@ -591,11 +586,16 @@ let rec eval (so : cool_value)    (* self object *)
             in
             result_value, s3
     | (_,_, Variable(vname)) ->
-            let loc = List.assoc vname e  in
-            List.assoc loc s, s
-    | _ -> failwith ( sprintf "Unhandled expr type %s" (exp_to_str expr))
+            begin match vname with
+            | "self" -> so, s
+            | _ ->
+                let loc = List.assoc vname e  in
+                List.assoc loc s, s
+            end
+    | _ -> failwith ( sprintf "Unhandled eval for expr type %s" (exp_to_str expr))
     (*TODO Find out why this ^ is "unused"*)
 (*
+ * TODO fill the following expressions
 | Case of exp * ((string * string * exp) list)
 - Internal of string (*Object.copy &c.*)
 | Let of (string * string * (exp option)) list * exp

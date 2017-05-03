@@ -102,6 +102,8 @@ and read_exp () =
         | "block" ->
                 let exp_list = read_list read_exp in
                 (loc, c_type, Block exp_list)
+        | "case" ->
+                failwith "deserialize case exprs"
         | "divide" ->
                 let e1 = read_exp () in
                 let e2 = read_exp () in
@@ -142,6 +144,11 @@ and read_exp () =
                 let e1 = read_exp () in
                 let e2 = read_exp () in
                 (loc, c_type, Le(e1, e2))
+        | "let" ->
+                let binding_list = read_list read_binding in
+                let body = read_exp() in
+                (loc, c_type, Let(binding_list, body))
+
         | "lt" ->
                 let e1 = read_exp () in
                 let e2 = read_exp () in
@@ -191,5 +198,23 @@ and read_exp () =
                 let e1 = read_exp () in
                 let e2 = read_exp () in
                 (loc, c_type, Loop(e1, e2))
-        | x -> failwith ("Unhandled exp kind:: " ^ x)
+        | x -> failwith ("Unhandled deserialization for expr kind:: " ^ x)
+
+and read_binding () = 
+    let kind = read() in
+    match kind with
+    | "let_binding_no_init" -> 
+            let _ = read() in
+            let id = read () in
+            let _ = read() in
+            let bind_type = read () in
+            id, bind_type, None
+    | "let_binding_init" ->
+            let _ = read() in
+            let id = read () in
+            let _ = read() in
+            let bind_type = read () in
+            let assign_exp = read_exp () in
+            id, bind_type, Some assign_exp
+    | _ -> failwith "not a binding"
 
