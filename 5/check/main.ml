@@ -145,6 +145,16 @@ let get_default type_str =
     | "Bool" -> Cool_Bool(false)
     | _ -> Void
 
+let rec get_closest etype options =
+    if List.mem etype options then
+        etype
+    else
+        try
+            let next_type = List.assoc etype pm in
+            get_closest next_type options
+        with Not_found -> failwith ("unhandled branch " ^ etype)
+        
+
 let rec eval (so : cool_value)    (* self object *)
              (s : store)          (* _the_ store *)
              (e : environment)    (* _the_ environment *)
@@ -172,6 +182,35 @@ let rec eval (so : cool_value)    (* self object *)
             ) (Void, s) exp_list in
             final_pair
     | (_,_, Bool(b)) -> Cool_Bool(b), s
+    | (linno, _, Case(e0, case_list)) ->
+            let v1, s2 = eval so s e e0 in
+            let options = List.map (fun case_elem ->
+                begin match case_elem with
+                | (_, type_only,_) -> type_only
+                end
+            ) case_list
+            in
+            let branch_type = begin match v1 with
+            | Void -> err linno "case on void"
+            | Cool_Int(i) -> get_closest "Int" options
+            | Cool_String(s, len) -> get_closest "String" options
+            | Cool_Bool(b) -> get_closest "Bool" options
+            | Cool_Object(cname, atters_and_locs) -> get_closest cname options
+            end in
+            let branch = (List.filter (fun elem -> 
+                begin match elem with
+                | (_,name,_) -> name = branch_type
+                end
+            ) case_list)
+            in
+            let branch = List.hd branch in
+            begin match branch with
+            | (id, branch_type, branch_exp) ->
+                    let loc = newloc () in
+                    let s3 = [(loc, v1)] @ s in
+                    let env = [(id, loc)] @ e in
+                    eval so s3 env branch_exp
+            end
     | (linno,_, Dispatch(e0, fname, args)) ->
             let current_store = ref s in
             let arg_values = List.map (fun arg_exp ->
@@ -387,20 +426,6 @@ let rec eval (so : cool_value)    (* self object *)
             | Cool_String(s1,l1), Cool_String(s2,l2) -> Cool_Bool(s1 <= s2), s3
             | Cool_Bool(b1), Cool_Bool(b2) -> Cool_Bool(b1 <= b2), s3
             | v1, v2 -> Cool_Bool(v1 == v2), s3
-
-                    (*
-            | Cool_Object(cname1, attr_locs1), Cool_Object(cname2, attr_locs2) ->
-                    let obj1 = Cool_Object(cname1, attr_locs1) in
-                    let obj2 = Cool_Object(cname2, attr_locs2) in
-                    let inverse_s3 = List.map (fun elem ->
-                        begin match elem with
-                        | (loc, value) -> (value, loc)
-                        end
-                    ) s3 in
-                    let addr1 = List.assoc obj1 inverse_s3 in
-                    let addr2 = List.assoc obj2 inverse_s3 in
-                    Cool_Bool(addr1 = addr2), s3
-                    *)
             end
              (*id      type     assign?             body*)
 (*  | Let of (string * string * (exp option)) list * exp*)
@@ -596,7 +621,6 @@ let rec eval (so : cool_value)    (* self object *)
                 let loc = List.assoc vname e  in
                 List.assoc loc s, s
             end
-    | _ -> failwith ( sprintf "Unhandled eval for expr type %s" (exp_to_str expr))
     (*TODO Find out why this ^ is "unused"*)
 (*
  * TODO fill the following expressions

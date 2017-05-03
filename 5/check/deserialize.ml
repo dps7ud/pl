@@ -103,7 +103,10 @@ and read_exp () =
                 let exp_list = read_list read_exp in
                 (loc, c_type, Block exp_list)
         | "case" ->
-                failwith "deserialize case exprs"
+                let e0 = read_exp () in
+                let case_list = read_list read_case_elem in
+                (loc, c_type, Case(e0, case_list))
+
         | "divide" ->
                 let e1 = read_exp () in
                 let e2 = read_exp () in
@@ -217,4 +220,12 @@ and read_binding () =
             let assign_exp = read_exp () in
             id, bind_type, Some assign_exp
     | _ -> failwith "not a binding"
+
+and read_case_elem () =
+    let _ = read () in
+    let id = read () in
+    let _ = read () in
+    let type_branch = read() in
+    let elem_body = read_exp() in
+    id, type_branch, elem_body
 
