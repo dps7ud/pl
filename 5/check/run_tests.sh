@@ -26,7 +26,8 @@ if [ $# -eq 0 ]; then
                 printf "F"
             fi
             echo "$DIFF" >> interp_errors.txt
-            printf "\n======================================================\n" >> interp_errors.txt
+            printf "\n======================================================\n" \
+            >> interp_errors.txt
 
 
             #vimdiff $1-type X.cl-type
