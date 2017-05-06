@@ -385,7 +385,8 @@ let rec eval (so : cool_value)    (* self object *)
                     | Cool_Int(i) -> Cool_Int(i)
                     | Cool_String(s, len) -> Cool_String(s, len)
                     | Void -> failwith "Copy of void"
-                    | Cool_Object(cname, attrs_and_locs) -> failwith "object.copy object"
+                    | Cool_Object(cname, attrs_and_locs) -> 
+                            Cool_Object(cname, attrs_and_locs)
                     end in
                     so_copy, s
             | "Object.type_name" ->
@@ -475,11 +476,11 @@ let rec eval (so : cool_value)    (* self object *)
                             let s4 = (loc, v1) :: List.remove_assoc loc s3 in
                             let new_expr = (lino, etype, Let(List.tl binding_list, body)) in
                             let v2, s5 = eval so s4 e2 new_expr in
-                            v2, s
+                            v2, s5
                     | None ->
                             let new_expr = (lino, etype, Let(List.tl binding_list, body)) in
                             let v2, s5 = eval so s2 e2 new_expr in
-                            v2, s
+                            v2, s5
                     end
             end
 
