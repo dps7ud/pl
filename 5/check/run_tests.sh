@@ -4,11 +4,12 @@ ocamlopt -c main.ml
 ocamlopt -o interp typedefs.cmx deserialize.cmx main.cmx
 rm interp_errors.txt
 # Default mode: try everything in directory
-TEST_DIR=./real_tests
 TEST_DIR=./tests
+TEST_DIR=./real_tests
 if [ $# -eq 0 ]; then
     for filename in $TEST_DIR/*.cl; do
         cool --type $filename
+        #printf "$filename\n"
         if [ -e "$filename-input" ]; then
             ./interp $filename-type < $filename-input 1> my_out.txt 2> one_error.txt
             cool $filename < $filename-input > cool_out.txt
@@ -42,7 +43,6 @@ if [ $# -eq 0 ]; then
             #vimdiff $1-type X.cl-type
             #printf "$filename:FAILED\n"
         else
-            rm $filename-type
             printf "."
         fi
         rm cool_out.txt
