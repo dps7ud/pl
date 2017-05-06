@@ -1,5 +1,5 @@
 open Printf
-open Typedefs
+open A_typedefs
 
 let new_location_counter = ref 1000
 let newloc () =

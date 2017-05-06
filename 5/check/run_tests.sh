@@ -1,8 +1,10 @@
-ocamlopt -c typedefs.ml
+ocamlopt -c a_typedefs.ml
 ocamlopt -c deserialize.ml
 ocamlopt -c main.ml
-ocamlopt -o interp typedefs.cmx deserialize.cmx main.cmx
-rm interp_errors.txt
+ocamlopt -o interp a_typedefs.cmx deserialize.cmx main.cmx
+if [ -e interp_errors.txt ]; then
+    rm interp_errors.txt
+fi
 # Default mode: try everything in directory
 TEST_DIR=./tests
 TEST_DIR=./real_tests
