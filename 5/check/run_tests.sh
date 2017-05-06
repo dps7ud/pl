@@ -42,14 +42,12 @@ if [ $# -eq 0 ]; then
             #vimdiff $1-type X.cl-type
             #printf "$filename:FAILED\n"
         else
-            rm cool_out.txt
-            rm one_error.txt
-            rm my_out.txt
             rm $filename-type
             printf "."
-#            printf "Passed $filename"
-#            printf "\n"
         fi
+        rm cool_out.txt
+        rm one_error.txt
+        rm my_out.txt
     done
     printf "\n"
     cat interp_errors.txt
