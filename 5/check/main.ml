@@ -282,8 +282,29 @@ let rec eval (so : cool_value)    (* self object *)
     | (_,_,Eq(e1, e2)) ->
         let v0, s2 = eval so s e e1 in
         let v1, s3 = eval so s2 e e2 in
-        Cool_Bool(v0 == v1), s3
+        begin match v0, v1 with
+        | Void, Void -> Cool_Bool(true), s3
+        | Cool_Int(i1), Cool_Int(i2) -> Cool_Bool((Int32.sub i1 i2) = Int32.zero), s3
+        | Cool_Bool(b1), Cool_Bool(b2) -> Cool_Bool(b1 = b2), s3
+        | Cool_String(s1, l1), Cool_String(s2, l2) -> Cool_Bool(s1 = s2), s3
+        | a, b -> Cool_Bool(a == b), s3
+        end
         (*
+        | Cool_Object(cname1, attr_locs1), Cool_Object(cname2, attr_locs2) ->
+                let obj1 = Cool_Object(cname1, attr_locs1) in
+                let obj2 = Cool_Object(cname2, attr_locs2) in
+                let inverse_s3 = List.map (fun elem ->
+                    begin match elem with
+                    | (loc, value) -> (value, loc)
+                    end
+                ) s3 in
+                let addr1 = List.assoc obj1 inverse_s3 in
+                let addr2 = List.assoc obj2 inverse_s3 in
+                Cool_Bool(addr1 = addr2), s3
+        | _ -> Cool_Bool(false), s3
+        end
+        Cool_Bool(v0 == v1), s3
+        ===========================
         begin match v0, v1 with
         | Void, Void -> Cool_Bool(true), s3
         | Cool_Int(i1), Cool_Int(i2) -> Cool_Bool((Int32.sub i1 i2) = Int32.zero), s3
@@ -353,6 +374,20 @@ let rec eval (so : cool_value)    (* self object *)
                     so, s
                     | _ -> failwith "Bad out_int"
                     end
+            | "Object.abort" ->
+                    let abort = "abort" in
+                    printf "%s\n" abort;
+                    exit 0;
+                    Void, s
+            | "Object.copy" ->
+                    let so_copy = begin match so with
+                    | Cool_Bool(b) -> Cool_Bool(b)
+                    | Cool_Int(i) -> Cool_Int(i)
+                    | Cool_String(s, len) -> Cool_String(s, len)
+                    | Void -> failwith "Copy of void"
+                    | Cool_Object(cname, attrs_and_locs) -> failwith "object.copy object"
+                    end in
+                    so_copy, s
             | "Object.type_name" ->
                     begin match so with
                     | Cool_Object(cname, _) -> 
@@ -367,13 +402,8 @@ let rec eval (so : cool_value)    (* self object *)
                     | Cool_String(_) ->
                             let str = Cool_String("String", 6) in
                             str, s
-                    | _ -> failwith "Some class without name"
+                    | Void -> failwith "Name of void"
                     end
-            | "Object.abort" ->
-                    let abort = "abort" in
-                    printf "%s\n" abort;
-                    exit 0;
-                    Void, s
 
             | "String.length" ->
                     begin match so with
