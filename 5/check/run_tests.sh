@@ -50,11 +50,9 @@ if [ $# -eq 0 ]; then
         rm my_out.txt
     done
     printf "\n"
-    cat interp_errors.txt
-    FINISHED=$(cat interp_errors.txt)
-    if [ "$FINISHED" != "" ]
+    if [ -e interp_errors.txt ]
     then
-        :
+        cat interp_errors.txt
     else
         printf "\nPassed all tests\n"
     fi
