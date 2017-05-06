@@ -149,13 +149,60 @@ let rec get_closest etype options =
     if List.mem etype options then
         etype
     else
-(*        try*)
-            let next_type = List.assoc etype pm in
-            get_closest next_type options
-(*        with Not_found -> Exception*)
-            
-(*            failwith ("Unhandled_branch")*)
-        
+        (* Not_found is allowed to pass up to eval
+         * and this is caught to determine an unhandled
+         * case branch*)
+        let next_type = List.assoc etype pm in
+        get_closest next_type options
+
+let whitespace = [' '; '\n'; '\r'; '\011'; '\012'; '\t']
+let numeric = [ '0'; '1'; '2'; '3'; '4'; '5'; '6'; '7'; '8'; '9'; '0']
+
+let rec strip_left in_string =
+    match in_string with
+    | "" -> ""
+    | s ->
+            let c = String.get s 0 in
+            if List.mem c whitespace then
+                strip_left (String.sub s 1 (String.length s -1))
+            else
+                s
+
+let rec get_last_numeric in_string index =
+    match in_string with
+    | "" -> index
+    | in_string ->
+            let c = String.get in_string 0 in
+            if List.mem c numeric then
+                get_last_numeric (String.sub in_string 1 (String.length in_string -1)) (index + 1)
+            else
+                index
+
+let as_int in_string =
+    match in_string with
+    | "" -> 0
+    | non_empty ->
+            begin match String.get non_empty 0 with
+            | '-' -> get_last_numeric (String.sub non_empty 1 (String.length non_empty -1)) 1
+            | _ -> get_last_numeric non_empty 0
+            end
+
+let handle_int base_str =
+    let trimmed = strip_left base_str in
+    let last_index = as_int trimmed in
+    if last_index = 0 then 
+        0
+    else
+        let good_str = String.sub trimmed 0 last_index in
+        let good_int = int_of_string good_str in
+        if good_int > 2147483647 || good_int < -2147483648 then
+            0
+        else
+            good_int
+let stack_frames = ref 0
+let newloc () =
+    incr new_location_counter ;
+    !new_location_counter 
 
 let rec eval (so : cool_value)    (* self object *)
              (s : store)          (* _the_ store *)
@@ -218,6 +265,10 @@ let rec eval (so : cool_value)    (* self object *)
                     eval so s3 env branch_exp
             end
     | (linno,_, Dispatch(e0, fname, args)) ->
+            incr stack_frames;
+            debug "Stack size: %d\n" !stack_frames;
+            if !stack_frames >= 1000 then
+                err linno "stack overflow";
             let current_store = ref s in
             let arg_values = List.map (fun arg_exp ->
                 let arg_value, new_store = eval so !current_store e arg_exp in
@@ -230,13 +281,15 @@ let rec eval (so : cool_value)    (* self object *)
             (* Or it's self dispatch and use so*)
             | None -> so, !current_store
             end in
-            begin match v0 with
+            let final_val, final_store = begin match v0 with
             | Void -> err linno "dispatch on void"
 
             | Cool_Object (x, attrs_and_locs) ->
                     let formals, body = List.assoc (x, fname) im in
                     let new_arg_locs = List.map (fun arg_exp ->
-                        newloc()
+                        let i = newloc() in
+                        debug_indent (); debug "allocated position %d\n" i;
+                        i
                     ) args in
                     let formals_and_locs = List.combine formals new_arg_locs in
                     let store_update = List.combine new_arg_locs arg_values in
@@ -277,6 +330,9 @@ let rec eval (so : cool_value)    (* self object *)
                     let inner_env = formals_and_locs in
                     eval v0 s_n3 inner_env body
             end
+            in
+            decr stack_frames;
+            final_val, final_store
     | (linno,_,Divide(e1,e2)) -> 
             let v1, s2 = eval so s e e1 in
             let v2, s3 = eval so s2 e e2 in
@@ -351,7 +407,16 @@ let rec eval (so : cool_value)    (* self object *)
     | (_,_,Integer(i)) -> Cool_Int(i), s
     | (lineno,_, Internal(fname)) -> 
             begin match fname with
-            (*
+            | "IO.in_int" ->
+                    let oc_str =
+                        try
+                            let x = read_line () in
+                            x
+                        with 
+                            End_of_file -> "0";
+                    in
+                    let x = handle_int oc_str in
+                    Cool_Int(Int32.of_int x), s
             | "IO.in_string" ->
                     let null_char = '\x00' in
                     let oc_str =
@@ -360,11 +425,11 @@ let rec eval (so : cool_value)    (* self object *)
                             x
                         with 
                             End_of_file -> "";
+                    in
                     if String.contains oc_str null_char then
                         Cool_String("", 0), s
                     else
-                        Cool_String(oc_str, String.length oc_str)
-                    *)
+                        Cool_String(oc_str, String.length oc_str), s
             | "IO.out_string" ->
                     let loc = List.assoc "x" e in
                     let str = List.assoc loc s in
@@ -378,8 +443,10 @@ let rec eval (so : cool_value)    (* self object *)
                     let loc = List.assoc "x" e in
                     let c_int = List.assoc loc s in
                     begin match c_int with
-                    | Cool_Int(int_lit) -> printf "%ld" int_lit;
-                    so, s
+                    | Cool_Int(int_lit) -> 
+                            printf "%ld" int_lit; 
+                            if !do_debug then flush stdout;
+                            so, s
                     | _ -> failwith "Bad out_int"
                     end
             | "Object.abort" ->
@@ -437,6 +504,18 @@ let rec eval (so : cool_value)    (* self object *)
                             | _ -> failwith "Non-int arg to substr"
                             end
                     | _ -> failwith "String.length called from non-string"
+                    end
+            | "String.concat" ->
+                    begin match so with
+                    |Cool_String(str1, len1) ->
+                            let loc = List.assoc "s" e in
+                            let to_concat = List.assoc loc s in
+                            begin match to_concat with
+                            | Cool_String(str2, len2) ->
+                                    Cool_String(str1 ^ str2, len1 + len2), s
+                            | _ -> failwith "Argument for concat not a string"
+                            end
+                    | _ -> failwith "String.concat called from non-string"
                     end
             | _ -> failwith ("Unimplemented internal " ^ fname)
             end
