@@ -4,12 +4,21 @@ ocamlopt -c main.ml
 ocamlopt -o interp typedefs.cmx deserialize.cmx main.cmx
 rm interp_errors.txt
 # Default mode: try everything in directory
+TEST_DIR=./real_tests
+TEST_DIR=./tests
 if [ $# -eq 0 ]; then
-    for filename in ./tests/*.cl; do
-#    for filename in ./real_tests/*.cl; do
+    for filename in $TEST_DIR/*.cl; do
         cool --type $filename
-        ./interp $filename-type 1> my_out.txt 2> one_error.txt
-        cool $filename > cool_out.txt
+        if [ -e "$filename-input" ]; then
+            ./interp $filename-type < $filename-input 1> my_out.txt 2> one_error.txt
+            cool $filename < $filename-input > cool_out.txt
+            printf "Using input file:" >> one_error.txt
+            printf "$filename-input" >> one_error.txt
+            printf "\n" >> one_error.txt
+        else
+            ./interp $filename-type 1> my_out.txt 2> one_error.txt
+            cool $filename > cool_out.txt
+        fi
         DIFF=$(diff cool_out.txt my_out.txt)
         if [ "$DIFF" != "" ]
         then
