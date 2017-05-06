@@ -149,10 +149,12 @@ let rec get_closest etype options =
     if List.mem etype options then
         etype
     else
-        try
+(*        try*)
             let next_type = List.assoc etype pm in
             get_closest next_type options
-        with Not_found -> failwith ("unhandled branch " ^ etype)
+(*        with Not_found -> Exception*)
+            
+(*            failwith ("Unhandled_branch")*)
         
 
 let rec eval (so : cool_value)    (* self object *)
@@ -190,13 +192,17 @@ let rec eval (so : cool_value)    (* self object *)
                 end
             ) case_list
             in
-            let branch_type = begin match v1 with
-            | Void -> err linno "case on void"
-            | Cool_Int(i) -> get_closest "Int" options
-            | Cool_String(s, len) -> get_closest "String" options
-            | Cool_Bool(b) -> get_closest "Bool" options
-            | Cool_Object(cname, atters_and_locs) -> get_closest cname options
-            end in
+            let branch_type = try 
+                begin match v1 with
+                | Void -> err linno "case on void"
+                | Cool_Int(i) -> get_closest "Int" options
+                | Cool_String(s, len) -> get_closest "String" options
+                | Cool_Bool(b) -> get_closest "Bool" options
+                | Cool_Object(cname, atters_and_locs) -> get_closest cname options
+                end 
+            with Not_found -> 
+                err linno ("case without matching branch: " ^ (value_to_str v1))
+            in
             let branch = (List.filter (fun elem -> 
                 begin match elem with
                 | (_,name,_) -> name = branch_type
@@ -219,7 +225,9 @@ let rec eval (so : cool_value)    (* self object *)
                 arg_value
             ) args in
             let v0, s_n2 = begin match e0 with
+            (* Either evaluate calling expr*)
             | Some e0 -> eval so !current_store e e0
+            (* Or it's self dispatch and use so*)
             | None -> so, !current_store
             end in
             begin match v0 with
@@ -652,13 +660,7 @@ let rec eval (so : cool_value)    (* self object *)
                 let loc = List.assoc vname e  in
                 List.assoc loc s, s
             end
-    (*TODO Find out why this ^ is "unused"*)
-(*
- * TODO fill the following expressions
-| Case of exp * ((string * string * exp) list)
-- Internal of string (*Object.copy &c.*)
-| Let of (string * string * (exp option)) list * exp
-*)
+(* - Internal of string: Object.copy &c.  *)
     in
     debug_indent(); debug "+++++++++++\n";
     debug_indent(); debug "ret val.=%s\n" (value_to_str new_val);
