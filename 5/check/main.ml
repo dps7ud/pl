@@ -125,18 +125,22 @@ let pm = Deserialize.read_parent_map ();;
 let rec str_format str =
   try
     let i = String.index str '\\' in
-    if String.length str > i + 1 && str.[i+1] == 'n' then
-        (String.sub str 0 i) 
-        ^ "\n" 
-        ^ (str_format (String.sub str (i + 2) ((String.length str) - (i + 2)) ))
-    else 
-        if String.length str > i + 1 && str.[i+1] == 't' then
-        (String.sub str 0 i) 
-        ^ "\t"
-(*        ^ "      " *)
-        ^ (str_format (String.sub str (i + 2) ((String.length str) - (i + 2)) ))
-        else
-            str
+    if String.length str = 0 then
+        str
+    else
+        if String.length str > i + 1 && str.[i+1] == 'n' then
+            let first = (String.sub str 0 i) in
+            first
+            ^ "\n" 
+            ^ (str_format (String.sub str (i + 2) ((String.length str) - (i + 2)) ))
+        else 
+            if String.length str > i + 1 && str.[i+1] == 't' then
+            (String.sub str 0 i) 
+            ^ "\t"
+            ^ (str_format (String.sub str (i + 2) ((String.length str) - (i + 2)) ))
+            else
+                String.sub str 0 (i + 1) 
+                ^ (str_format (String.sub str (i+1) (String.length str - (i+1))  ) )
   with Not_found -> str;;
 
 let err linum msg =
