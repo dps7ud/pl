@@ -1,6 +1,7 @@
 open Printf
 open A_typedefs
 
+(* This function tracks allocation of the store*)
 let new_location_counter = ref 1000
 let newloc () =
     incr new_location_counter ;
@@ -18,6 +19,7 @@ let debug fmt=
     kprintf handle fmt
     *)
 
+(* This function constructs a string representing a cool expression*)
 let rec exp_to_str expr =
     match expr with
     | (_,_,Assign(x, e)) -> sprintf "Assign(%s, %s)" x (exp_to_str e)
@@ -83,6 +85,7 @@ let rec exp_to_str expr =
     | (_,_,Times(e1, e2)) -> sprintf "Times(%s, %s)" (exp_to_str e1) (exp_to_str e2)
     | (_,_,Variable(x)) -> sprintf "Variable(%s)" x
 
+(* This function constructs a string representing a cool value*)
 let value_to_str v =
     match v with
     | Cool_Int(i) -> sprintf "Int(%ld)" i
@@ -95,12 +98,14 @@ let value_to_str v =
             ) "" attrs in
             sprintf "%s([%s])" cname attr_str
 
+(* This function constructs a string representing a cool environment*)
 let env_to_str env =
     let binding_str = List.fold_left (fun acc (aname, aaddr) ->
         sprintf "%s, %s=%d" acc aname aaddr
     ) "" (List.sort compare env) in
     sprintf "[%s]" binding_str
 
+(* This function constructs a string representing a cool store*)
 let store_to_str store_in =
     let store_str = List.fold_left (fun acc (addr, cvalue) ->
         sprintf "%s, %d=%s" acc addr (value_to_str cvalue)
@@ -112,16 +117,19 @@ let indent_count = ref 0
 let debug_indent () =
     debug "%s" (String.make !indent_count ' ')
     *)
-
-
+(*Here, we desearialize the needed maps*)
 let cm = Deserialize.read_class_map ()
 let im = Deserialize.read_imp_map ()
 let pm = Deserialize.read_parent_map ();;
 
-(****************)
-(** Evaluation **)
-(****************)
 
+
+(**********************)
+(** Helper functions **)
+(**********************)
+
+(* This function formats strings for printing in accordance
+ * with cool standards*)
 let rec str_format str =
   try
     let i = String.index str '\\' in
@@ -143,10 +151,12 @@ let rec str_format str =
                 ^ (str_format (String.sub str (i+1) (String.length str - (i+1))  ) )
   with Not_found -> str;;
 
+(* Puts error message and linenumber to stdout and halts execution*)
 let err linum msg =
     printf "ERROR: %s: Exception: %s\n" linum msg;
     exit 1
 
+(* Gets default value for passed cool type*)
 let get_default type_str =
     match type_str with
     | "Int" -> Cool_Int(0l)
@@ -154,6 +164,7 @@ let get_default type_str =
     | "Bool" -> Cool_Bool(false)
     | _ -> Void
 
+(* Calculates closest *)
 let rec get_closest etype options =
     if List.mem etype options then
         etype
@@ -164,9 +175,11 @@ let rec get_closest etype options =
         let next_type = List.assoc etype pm in
         get_closest next_type options
 
+(* These are used to read input ints*)
 let whitespace = [' '; '\n'; '\r'; '\011'; '\012'; '\t']
-let numeric = [ '0'; '1'; '2'; '3'; '4'; '5'; '6'; '7'; '8'; '9'; '0']
+let numeric = ['1'; '2'; '3'; '4'; '5'; '6'; '7'; '8'; '9'; '0']
 
+(* Left string a given string*)
 let rec strip_left in_string =
     match in_string with
     | "" -> ""
@@ -177,6 +190,7 @@ let rec strip_left in_string =
             else
                 s
 
+(* Will return the last digit character of the given string*)
 let rec get_last_numeric in_string index =
     match in_string with
     | "" -> index
@@ -187,6 +201,7 @@ let rec get_last_numeric in_string index =
             else
                 index
 
+(* Will allow a single leading minus sign*)
 let as_int in_string =
     match in_string with
     | "" -> 0
@@ -196,6 +211,8 @@ let as_int in_string =
             | _ -> get_last_numeric non_empty 0
             end
 
+(* Using the above functions, parse input string to an integer
+ * as specified in the CRM*)
 let handle_int base_str =
     let trimmed = strip_left base_str in
     let last_index = as_int trimmed in
@@ -212,11 +229,14 @@ let handle_int base_str =
             0
         else
             good_int
-let stack_frames = ref 0
-let newloc () =
-    incr new_location_counter ;
-    !new_location_counter 
 
+
+(* Stack frame counter*)
+let stack_frames = ref 0
+
+(****************)
+(** Evaluation **)
+(****************)
 let rec eval (so : cool_value)    (* self object *)
              (s : store)          (* _the_ store *)
              (e : environment)    (* _the_ environment *)
@@ -263,6 +283,7 @@ let rec eval (so : cool_value)    (* self object *)
                 | Cool_Object(cname, atters_and_locs) -> get_closest cname options
                 end 
             with Not_found -> 
+                (* If this error is raised, we have a unmatched case expression*)
                 err linno ("case without matching branch: " ^ (value_to_str v1))
             in
             let branch = (List.filter (fun elem -> 
@@ -275,7 +296,7 @@ let rec eval (so : cool_value)    (* self object *)
             begin match branch with
             | (id, branch_type, branch_exp) ->
                     let loc = newloc () in
-                    let s3 = [(loc, v1)] @ s in
+                    let s3 = [(loc, v1)] @ s2 in
                     let env = [(id, loc)] @ e in
                     eval so s3 env branch_exp
             end
@@ -367,48 +388,6 @@ let rec eval (so : cool_value)    (* self object *)
         | Cool_String(s1, l1), Cool_String(s2, l2) -> Cool_Bool(s1 = s2), s3
         | a, b -> Cool_Bool(a == b), s3
         end
-        (*
-        | Cool_Object(cname1, attr_locs1), Cool_Object(cname2, attr_locs2) ->
-                let obj1 = Cool_Object(cname1, attr_locs1) in
-                let obj2 = Cool_Object(cname2, attr_locs2) in
-                let inverse_s3 = List.map (fun elem ->
-                    begin match elem with
-                    | (loc, value) -> (value, loc)
-                    end
-                ) s3 in
-                let addr1 = List.assoc obj1 inverse_s3 in
-                let addr2 = List.assoc obj2 inverse_s3 in
-                Cool_Bool(addr1 = addr2), s3
-        | _ -> Cool_Bool(false), s3
-        end
-        Cool_Bool(v0 == v1), s3
-        ===========================
-        begin match v0, v1 with
-        | Void, Void -> Cool_Bool(true), s3
-        | Cool_Int(i1), Cool_Int(i2) -> Cool_Bool((Int32.sub i1 i2) = Int32.zero), s3
-        | Cool_Bool(b1), Cool_Bool(b2) -> Cool_Bool(b1 = b2), s3
-        | Cool_String(s1, l1), Cool_String(s2, l2) -> Cool_Bool(s1 = s2), s3
-        | Cool_Object(cname1, attr_locs1), Cool_Object(cname2, attr_locs2) ->
-                let eq_val = Cool_Bool(
-                    Cool_Object(cname1, attr_locs1) == Cool_Object(cname2, attr_locs2)
-                    ) in
-                eq_val, s3
-                *)
-        (*
-        | Cool_Object(cname1, attr_locs1), Cool_Object(cname2, attr_locs2) ->
-                let obj1 = Cool_Object(cname1, attr_locs1) in
-                let obj2 = Cool_Object(cname2, attr_locs2) in
-                let inverse_s3 = List.map (fun elem ->
-                    begin match elem with
-                    | (loc, value) -> (value, loc)
-                    end
-                ) s3 in
-                let addr1 = List.assoc obj1 inverse_s3 in
-                let addr2 = List.assoc obj2 inverse_s3 in
-                Cool_Bool(addr1 = addr2), s3
-        | _ -> Cool_Bool(false), s3
-        end
-                *)
     | (_,_,If(pred, thn, els)) ->
             let v1, s2 = eval so s e pred in
             begin match v1 with
@@ -511,7 +490,7 @@ let rec eval (so : cool_value)    (* self object *)
                             | Cool_Int(li1), Cool_Int(li2) ->
                                     let i1 = int_of_string (Int32.to_string li1) in
                                     let i2 = int_of_string (Int32.to_string li2) in
-                                        if (i1 + i2 > len) then
+                                        if (i1 + i2 > len) || i2 < 0 || i1 < 0 then
                                             err lineno "String.substr out of range"
                                         else
                                             Cool_String (String.sub str i1 i2, i2), s
@@ -533,7 +512,6 @@ let rec eval (so : cool_value)    (* self object *)
                     end
             | _ -> failwith ("Unimplemented internal " ^ fname)
             end
-            (*TODO: IO.in_int/in_string*)
     | (_,_,Isvoid(e1)) ->
             let v0, s2 = eval so s e e1 in
             begin match v0 with
@@ -681,6 +659,7 @@ let rec eval (so : cool_value)    (* self object *)
             end
     | (_,_,Self) -> so, s
     | (linno,_,Static(caller, stat, fname, args)) ->
+            incr stack_frames;
             let current_store = ref s in
             let arg_values = List.map (fun arg_exp ->
                 let arg_value, new_store = eval so !current_store e arg_exp in
@@ -688,8 +667,7 @@ let rec eval (so : cool_value)    (* self object *)
                 arg_value
             ) args in
             let v0, s_n2 = eval so !current_store e caller in
-            begin match v0 with
-
+            let result = begin match v0 with
             | Void -> err linno "static dispatch on void"
 
             | Cool_Object (x, attrs_and_locs) ->
@@ -736,6 +714,9 @@ let rec eval (so : cool_value)    (* self object *)
                     let inner_env = formals_and_locs in
                     eval v0 s_n3 inner_env body
             end
+            in
+            decr stack_frames;
+            result
     | (_,_,String(str)) -> Cool_String(str, String.length str), s
     | (_,_,Times(e1,e2)) -> 
             let v1, s2 = eval so s e e1 in
@@ -753,7 +734,6 @@ let rec eval (so : cool_value)    (* self object *)
                 let loc = List.assoc vname e  in
                 List.assoc loc s, s
             end
-(* - Internal of string: Object.copy &c.  *)
     in
     (*
     debug_indent(); debug "+++++++++++\n";
@@ -763,17 +743,17 @@ let rec eval (so : cool_value)    (* self object *)
     *)
     new_val, new_store
 
+(*****************)
+(** Entry point **)
+(*****************)
 let main () = begin
+    (* Running the input program is identically 
+     * evaluation of the below expression *)
     let last = ("0", "Object", Dispatch( Some ("0", "Object", New("Main")), "main", [])) in
-(*    debug "last = %s\n" (exp_to_str last);*)
-
     let init_so = Void in
     let init_store = [] in
     let init_env = [] in
     eval init_so init_store init_env last
-(*    let final_val, final_store = eval init_so init_store init_env last in*)
-
-(*    debug "result val   = %s\n" (value_to_str final_val);*)
-(*    debug "result store = %s\n" (store_to_str final_store);*)
 end;;
-main();;
+main(
+);;
