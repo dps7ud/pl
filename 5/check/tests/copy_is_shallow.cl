@@ -5,9 +5,7 @@ class Main{
             {
                 b.modify();
                 b.put();
-                (new IO).out_string("\n");
                 duplicate.put();
-                (new IO).out_string("\n");
             }
     };
 };
