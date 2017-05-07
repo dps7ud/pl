@@ -1,4 +1,5 @@
 https://caml.inria.fr/pub/docs/manual-ocaml/libref/X.html
-    for X in {"Int32", "List"}
+    for X in {"Int32", "List", "Printf", "String", "Pervasives"}
 CRM
 Weimer's "Getting Started with Interpreting"
+Piazza
