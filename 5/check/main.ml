@@ -9,12 +9,14 @@ let newloc () =
 (***************************)
 (** Debugging and Tracing **)
 (***************************)
+    (*
 let do_debug = ref false
 let debug fmt=
     let handle result_string =
         if !do_debug then printf "%s" result_string
     in
     kprintf handle fmt
+    *)
 
 let rec exp_to_str expr =
     match expr with
@@ -105,9 +107,11 @@ let store_to_str store_in =
     ) "" (List.sort compare store_in) in
     sprintf "[%s]" store_str
 
+(*
 let indent_count = ref 0
 let debug_indent () =
     debug "%s" (String.make !indent_count ' ')
+    *)
 
 
 let cm = Deserialize.read_class_map ()
@@ -128,7 +132,8 @@ let rec str_format str =
     else 
         if String.length str > i + 1 && str.[i+1] == 't' then
         (String.sub str 0 i) 
-        ^ "\t" 
+        ^ "\t"
+(*        ^ "      " *)
         ^ (str_format (String.sub str (i + 2) ((String.length str) - (i + 2)) ))
         else
             str
@@ -194,7 +199,11 @@ let handle_int base_str =
         0
     else
         let good_str = String.sub trimmed 0 last_index in
-        let good_int = int_of_string good_str in
+        let good_int = 
+            try
+            int_of_string good_str
+            with int_of_string -> 0
+        in
         if good_int > 2147483647 || good_int < -2147483648 then
             0
         else
@@ -211,12 +220,14 @@ let rec eval (so : cool_value)    (* self object *)
              :
              (cool_value * store) (*resulting value and updated store*)
              =
+    (*
     indent_count := !indent_count + 2;
     debug "\n";
     debug_indent () ; debug "eval.:%s\n" (exp_to_str expr);
     debug_indent () ; debug "so...=%s\n" (value_to_str so);
     debug_indent () ; debug "store=%s\n" (store_to_str s);
     debug_indent () ; debug "env..=%s\n" (env_to_str e);
+    *)
     let new_val, new_store = match expr with
     | (_,_, Assign(vname, rhs)) ->
             let v1, s2 = eval so s e rhs in
@@ -266,8 +277,7 @@ let rec eval (so : cool_value)    (* self object *)
             end
     | (linno,_, Dispatch(e0, fname, args)) ->
             incr stack_frames;
-            debug "Stack size: %d\n" !stack_frames;
-            if !stack_frames >= 1000 then
+            if !stack_frames > 1000 then
                 err linno "stack overflow";
             let current_store = ref s in
             let arg_values = List.map (fun arg_exp ->
@@ -288,12 +298,12 @@ let rec eval (so : cool_value)    (* self object *)
                     let formals, body = List.assoc (x, fname) im in
                     let new_arg_locs = List.map (fun arg_exp ->
                         let i = newloc() in
-                        debug_indent (); debug "allocated position %d\n" i;
                         i
                     ) args in
                     let formals_and_locs = List.combine formals new_arg_locs in
                     let store_update = List.combine new_arg_locs arg_values in
-                    let s_n3 = store_update @ s_n2 in
+(*                    let s_n3 = store_update @ s_n2 in*)
+                    let s_n3 = List.rev_append store_update s_n2 in
                     let inner_env = formals_and_locs @ attrs_and_locs in
                     eval v0 s_n3 inner_env body
 
@@ -445,7 +455,7 @@ let rec eval (so : cool_value)    (* self object *)
                     begin match c_int with
                     | Cool_Int(int_lit) -> 
                             printf "%ld" int_lit; 
-                            if !do_debug then flush stdout;
+(*                            if !do_debug then flush stdout;*)
                             so, s
                     | _ -> failwith "Bad out_int"
                     end
@@ -498,7 +508,7 @@ let rec eval (so : cool_value)    (* self object *)
                                     let i1 = int_of_string (Int32.to_string li1) in
                                     let i2 = int_of_string (Int32.to_string li2) in
                                         if (i1 + i2 > len) then
-                                            err lineno "substring out of bounds"
+                                            err lineno "String.substr out of range"
                                         else
                                             Cool_String (String.sub str i1 i2, i2), s
                             | _ -> failwith "Non-int arg to substr"
@@ -676,7 +686,7 @@ let rec eval (so : cool_value)    (* self object *)
             let v0, s_n2 = eval so !current_store e caller in
             begin match v0 with
 
-            | Void -> err linno "dispatch on void"
+            | Void -> err linno "static dispatch on void"
 
             | Cool_Object (x, attrs_and_locs) ->
                     let formals, body = List.assoc (stat, fname) im in
@@ -741,21 +751,25 @@ let rec eval (so : cool_value)    (* self object *)
             end
 (* - Internal of string: Object.copy &c.  *)
     in
+    (*
     debug_indent(); debug "+++++++++++\n";
     debug_indent(); debug "ret val.=%s\n" (value_to_str new_val);
     debug_indent(); debug "retstore=%s\n" (store_to_str new_store);
     indent_count := !indent_count - 2;
+    *)
     new_val, new_store
 
 let main () = begin
     let last = ("0", "Object", Dispatch( Some ("0", "Object", New("Main")), "main", [])) in
-    debug "last = %s\n" (exp_to_str last);
+(*    debug "last = %s\n" (exp_to_str last);*)
 
     let init_so = Void in
     let init_store = [] in
     let init_env = [] in
-    let final_val, final_store = eval init_so init_store init_env last in
-    debug "result val   = %s\n" (value_to_str final_val);
-    debug "result store = %s\n" (store_to_str final_store);
+    eval init_so init_store init_env last
+(*    let final_val, final_store = eval init_so init_store init_env last in*)
+
+(*    debug "result val   = %s\n" (value_to_str final_val);*)
+(*    debug "result store = %s\n" (store_to_str final_store);*)
 end;;
 main();;
