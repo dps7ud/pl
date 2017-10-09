@@ -20,20 +20,20 @@ Times we've thought
     The type-checking of expressions was not the most difficult part of this assignment.
 The general level of kaos and mayhem in the submitted code is possibly due to the
 author's unfamiliarity with the language but anecdotal evidence would indicate
-that javascript encourages a well-rounded disoreder. 
+that javascript encourages a well-rounded disorder. 
     While some short-sighted design decisions were made, the downright unexpressiveness
 of the language drove the production the loose grouping of scotch-taped kludges we'll
 call a semantic analyzer.
-    In the end, writing individual typing rules could be catagorized as "tricky"
+    In the end, writing individual typing rules could be categorized as "tricky"
 but in a fun sort of way. You know, like putting together a puzzle. Navigating
 javascript is more like watching some guy put together a puzzle where all the
 pieces are one color except the person you're watching is also you. Oh, and the
 manufacturer decided not to have any edges so you/him have to come up with 
 something for that even though PLENTY OF OTHER PUZZLES have edges. Like, it's
-not a bizzare and wacky insight to look at two numbers and notice wich one is
+not a bizarre and wacky insight to look at two numbers and notice which one is
 bigger instead of which one would come first in a dictionary of numbers. Because 
 there is no such thing as a dictionary of numbers. Do you know why? Because that's 
-a ridiculous way to think about numebrs.
+a ridiculous way to think about numbers.
 
     Things to do better next time:
     
@@ -44,4 +44,4 @@ a ridiculous way to think about numebrs.
     our major life decisions.
     3. Use a different language: seriously
     4. Planning. we found ourselves in a situation where it was necessary to
-        club together information in an ad-hoc fashion.
+        club together information in an ad hoc fashion.
