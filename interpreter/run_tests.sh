@@ -6,8 +6,10 @@ if [ -e interp_errors.txt ]; then
     rm interp_errors.txt
 fi
 # Default mode: try everything in directory
-TEST_DIR=./trouble
-TEST_DIR=./tests
+
+#Select test suite by manually editing
+# TEST_DIR=./trouble
+TEST_DIR=./all_tests/tests
 if [ $# -eq 0 ]; then
     for filename in $TEST_DIR/*.cl; do
         cool --type $filename
