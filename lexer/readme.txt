@@ -4,6 +4,8 @@ gcc -Wall *.c
 ./a.out <*.cl>
 
 The nearby lexical analyzer was generated using flex 2.6.0 and gcc 4.1.2.
+    
+    The bulk of student work can be found in the pa2.lex file.
 
     definitions -> we make use of the following imports:
         limits.h: to have the value MAX_INT
@@ -16,8 +18,8 @@ The nearby lexical analyzer was generated using flex 2.6.0 and gcc 4.1.2.
 
     patterns and rules ->
         Patterns for keywords, identifiers, boolean literal and special symbols are 
-    self-documenting and quite simple. To find integer literals, we match [0-9]+ and
-    handle errors later. we similarly implement errors while scanning both strings
+    self-documenting and simple. To find integer literals, we match [0-9]+ and
+    handle errors later. We similarly implement errors while scanning both strings
     and comments. Values are scanned and error checking is done in main, not yylex.
         A separate start state was used to find multi-line comments and an integer counter
     was used to allow for nested comments. Single line comments do not enter the comment
@@ -26,7 +28,7 @@ The nearby lexical analyzer was generated using flex 2.6.0 and gcc 4.1.2.
         Strings were implemented without using a start state and a single regular expression
     was used to find string constants.
 
-    Main ->
+    main ->
         Each token returned was added to a list of tokens. Strings and Int literals
     were checked for a variety of errors. If an error is encountered, we immediately
     end lexing and push an error message to stdout. Otherwise, we open our file, push

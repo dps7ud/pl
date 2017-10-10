@@ -606,10 +606,9 @@ int yy_flex_debug = 0;
 #define YY_MORE_ADJ 0
 #define YY_RESTORE_YY_MORE_OFFSET
 char *yytext;
-#line 1 "try.lex"
+#line 1 "pa2.lex"
 
-#line 4 "try.lex"
-//%x STR
+#line 4 "pa2.lex"
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -646,15 +645,9 @@ struct node {
     char * val;
     int lino;
     struct node * next;
-/*
-<INITIAL>\"     {BEGIN(STR);}
-<STR><<EOF>>                 return -2;
-<STR>(\\[^\n\0]|[^\n\"\0])*      return STRING;
-<STR>\"     {BEGIN(INITIAL);}
-*/
 } ;
 
-#line 658 "main.c"
+#line 651 "main.c"
 
 #define INITIAL 0
 #define COMMENT 1
@@ -873,9 +866,9 @@ YY_DECL
 		}
 
 	{
-#line 50 "try.lex"
+#line 43 "pa2.lex"
 
-#line 879 "main.c"
+#line 872 "main.c"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -934,123 +927,123 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 51 "try.lex"
+#line 44 "pa2.lex"
 //Ignore whitespace that isn't newline
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 52 "try.lex"
+#line 45 "pa2.lex"
 return CASE;
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 53 "try.lex"
+#line 46 "pa2.lex"
 return ELSE;
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 55 "try.lex"
+#line 48 "pa2.lex"
 return CLASS;
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 56 "try.lex"
+#line 49 "pa2.lex"
 return ESAC;
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 57 "try.lex"
+#line 50 "pa2.lex"
 return FALSE;
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 58 "try.lex"
+#line 51 "pa2.lex"
 return FI;
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 59 "try.lex"
+#line 52 "pa2.lex"
 return IF;
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 60 "try.lex"
+#line 53 "pa2.lex"
 return IN;
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 61 "try.lex"
+#line 54 "pa2.lex"
 return INHERITS;
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 62 "try.lex"
+#line 55 "pa2.lex"
 return ISVOID;
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 63 "try.lex"
+#line 56 "pa2.lex"
 return LET;
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 64 "try.lex"
+#line 57 "pa2.lex"
 return LOOP;
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 65 "try.lex"
+#line 58 "pa2.lex"
 return NEW;
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 66 "try.lex"
+#line 59 "pa2.lex"
 return NOT;
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 67 "try.lex"
+#line 60 "pa2.lex"
 return OF;
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 68 "try.lex"
+#line 61 "pa2.lex"
 return POOL;
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 69 "try.lex"
+#line 62 "pa2.lex"
 return THEN;
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 70 "try.lex"
+#line 63 "pa2.lex"
 return TRUE;
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 71 "try.lex"
+#line 64 "pa2.lex"
 return WHILE;
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 74 "try.lex"
+#line 67 "pa2.lex"
 return STRING;//TODO: handles \0 in string literal?
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 76 "try.lex"
+#line 69 "pa2.lex"
 // ignore singe-line comments
 	YY_BREAK
 case 23:
 /* rule 23 can match eol */
 YY_RULE_SETUP
-#line 77 "try.lex"
+#line 70 "pa2.lex"
 ++numLines;
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 78 "try.lex"
+#line 71 "pa2.lex"
 {   // End comment
                     commentDepth--;
                     if(commentDepth == 0){
@@ -1059,23 +1052,23 @@ YY_RULE_SETUP
                 }
 	YY_BREAK
 case YY_STATE_EOF(COMMENT):
-#line 84 "try.lex"
+#line 77 "pa2.lex"
 return -3;
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 85 "try.lex"
+#line 78 "pa2.lex"
 // Consume stars in comments
 	YY_BREAK
 case 26:
 /* rule 26 can match eol */
 YY_RULE_SETUP
-#line 86 "try.lex"
+#line 79 "pa2.lex"
 // Consume anything not a star
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 87 "try.lex"
+#line 80 "pa2.lex"
 {   // Begin comment
                             commentDepth++;
                             BEGIN(COMMENT);
@@ -1083,129 +1076,129 @@ YY_RULE_SETUP
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 92 "try.lex"
+#line 85 "pa2.lex"
 return AT;
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 93 "try.lex"
+#line 86 "pa2.lex"
 return COLON;
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 94 "try.lex"
+#line 87 "pa2.lex"
 return COMMA;
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 95 "try.lex"
+#line 88 "pa2.lex"
 return DIVIDE;
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 96 "try.lex"
+#line 89 "pa2.lex"
 return DOT;
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 97 "try.lex"
+#line 90 "pa2.lex"
 return EQUALS;
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 98 "try.lex"
+#line 91 "pa2.lex"
 return LARROW;
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 99 "try.lex"
+#line 92 "pa2.lex"
 return LE;
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 100 "try.lex"
+#line 93 "pa2.lex"
 return LBRACE;
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 101 "try.lex"
+#line 94 "pa2.lex"
 return LPAREN;
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 102 "try.lex"
+#line 95 "pa2.lex"
 return LT;
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 103 "try.lex"
+#line 96 "pa2.lex"
 return MINUS;
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 104 "try.lex"
+#line 97 "pa2.lex"
 return PLUS;
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 105 "try.lex"
+#line 98 "pa2.lex"
 return RARROW;
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 106 "try.lex"
+#line 99 "pa2.lex"
 return RBRACE;
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 107 "try.lex"
+#line 100 "pa2.lex"
 return RPAREN;
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
-#line 108 "try.lex"
+#line 101 "pa2.lex"
 return SEMI;
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
-#line 109 "try.lex"
+#line 102 "pa2.lex"
 return TILDE;
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
-#line 110 "try.lex"
+#line 103 "pa2.lex"
 return TIMES;
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
-#line 113 "try.lex"
+#line 106 "pa2.lex"
 return IDENTIFIER;
 	YY_BREAK
 case 48:
 YY_RULE_SETUP
-#line 114 "try.lex"
+#line 107 "pa2.lex"
 return TYPE;
 	YY_BREAK
 case 49:
 YY_RULE_SETUP
-#line 115 "try.lex"
+#line 108 "pa2.lex"
 return INTEGER;
 	YY_BREAK
 case 50:
 YY_RULE_SETUP
-#line 116 "try.lex"
+#line 109 "pa2.lex"
 return -2;// Invalid character
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
-#line 117 "try.lex"
+#line 110 "pa2.lex"
 return -1;
 	YY_BREAK
 case 51:
 YY_RULE_SETUP
-#line 119 "try.lex"
+#line 112 "pa2.lex"
 ECHO;
 	YY_BREAK
-#line 1209 "main.c"
+#line 1202 "main.c"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -2204,7 +2197,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 119 "try.lex"
+#line 112 "pa2.lex"
 
 
 
@@ -2259,7 +2252,7 @@ int main(int argc, char **argv){
         char* strVal;
         char* tokVal;
 
-        // Get the next token
+        /* Get the next token.*/
         tok = yylex();
         numTokens++;
 
@@ -2320,7 +2313,6 @@ int main(int argc, char **argv){
         newNode -> val = strVal;
         newNode -> next = tokens;
         tokens = newNode;
-//        printf("token: %s\t\tline: %d\tval:%s\n", tokens->head, numLines + 1, strVal);
     }
 
     /* What should our filename be?*/
@@ -2358,14 +2350,11 @@ int main(int argc, char **argv){
         for(; tokens != NULL; tokens = tokens -> next){
             fprintf(outFile, "%d\n", tokens->lino);
             fprintf(outFile, "%s\n", tokens->head);
-//            printf("%d\n", tokens->lino);
-//            printf("%s\n", tokens->head);
             /* Some data-types require us to output associated lexeme*/
             if(!(strcmp(tokens -> head, "identifier") &&
                 strcmp(tokens -> head, "integer") &&
                 strcmp(tokens -> head, "string") &&
                 strcmp(tokens -> head, "type")) ){
-//                printf("%s\n", tokens->val);
                 fprintf(outFile, "%s\n", tokens->val);
             }
         }
