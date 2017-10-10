@@ -5,8 +5,8 @@ University of Virginia, Spring 2017.
 
 ### COOL
 The majority of this repository consists of an implementation of the
-Classroom Object Oriented Language (COOL), an imperative, strogly-typed, single-inheritance
-pedigogical language. COOL is specified in the [COOL Reference Manual](http://www.cs.virginia.edu/~cs415/cool-manual/cool-manual.html) (CRM).
+Classroom Object Oriented Language (COOL), an imperative, strongly-typed, single-inheritance
+pedagogical language. COOL is specified in the [COOL Reference Manual](http://www.cs.virginia.edu/~cs415/cool-manual/cool-manual.html) (CRM).
 
 ### Implementation
 This implementation is constructed of four modules as detailed below.

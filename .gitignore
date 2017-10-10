@@ -1,11 +1,15 @@
 # Compiled files
 *.hi
 *.o
+*.out
 *.pyc
 *.pyo
 *.cmi
 *.cmo
 *.out
+
+# Zipfiles
+*.zip
 
 # Vim swp files
 *.sw
@@ -29,3 +33,8 @@
 # test results file
 interp_errors.txt
 log.txt
+
+# COOL files at various stages of interpretation
+*.cl-lex
+*.cl-ast
+*.cl-type
