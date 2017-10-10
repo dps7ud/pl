@@ -1,21 +1,27 @@
-readme.txt:
-    This file.
-
-references.txt:
-    List of references and topics.
-
-good.cl:
-    Wild and wacky testing.
+This parser was constructed using cPython 2.7 and PLY version 3.8.
+The following files are present.
 
 bad.cl:
-    Case expression with empty body.
+    A COOL file that should not parse. Case expression with empty body.
+
+good.cl:
+    A COOL file that should successfully parse. Wild and wacky testing.
 
 lex.py, yacc.py: 
     Required dependencies.
 
 main.py:
     This file is divided into three sections, setup, parser definition and output/serialization.
+    (See below)
 
+readme.txt:
+    This file.
+
+references.txt:
+    List of references and topics.
+
+
+main.py discussion:
     setup:
     As in Weimer's video, the lexer is setup using a dummy python class and the supplied
 cl-lex file. From the provided file, we note the last token and last line to provide an error
@@ -23,7 +29,7 @@ message in the case that the parser reaches the end of input before completing a
 
     parser definition:
     Tokens and precedence rules are taken from the CRM. Below is a list of parse rules that
-may not be obvious derived from the CRM page titled "Cool Syntax"
+may not be obvious derived from the CRM page titled "Cool Syntax."
 
 program -> classlist
 classlist -> class; | class; classlist
